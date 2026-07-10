@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.git
+.github
+data/*.json
+data/*.tmp
+home-assistant-nerd-edition
+npm-debug.log*

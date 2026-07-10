@@ -1,0 +1,31 @@
+services:
+  ninho:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ninho-tuya:${NINHO_VERSION:-local}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATA_FILE: /app/data/state.json
+    ports:
+      - "${NINHO_PORT:-3001}:3001"
+    volumes:
+      - ninho-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  ninho-data:
+    name: ninho-data
