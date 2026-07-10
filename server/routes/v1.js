@@ -1,0 +1,25 @@
+import express from 'express';
+import { AppError } from '../core/app-error.js';
+import { authenticate, authorizeHome } from '../security/auth-middleware.js';
+
+const cookie = req => Object.fromEntries(String(req.get('cookie')||'').split(';').map(item=>item.trim().split('=').map(decodeURIComponent)).filter(pair=>pair.length===2));
+const refreshCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_ENV==='production',path:'/api/v1/auth',maxAge:7*24*60*60*1000};
+
+export function createV1Router({auth,identity,tokens,providers}) {
+  const router=express.Router();const requireAuth=authenticate(tokens);
+  router.get('/health',(req,res)=>res.json({status:'ok',timestamp:new Date().toISOString(),correlationId:req.correlationId}));
+  router.post('/auth/register',async(req,res,next)=>{try{const result=await auth.register(req.body);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);res.status(201).json({accessToken:result.accessToken,expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
+  router.post('/auth/login',async(req,res,next)=>{try{const result=await auth.login(req.body?.email,req.body?.password);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);res.json({accessToken:result.accessToken,expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
+  router.post('/auth/refresh',async(req,res,next)=>{try{const result=await auth.refresh(cookie(req).ninho_refresh);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);res.json({accessToken:result.accessToken,expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
+  router.post('/auth/logout',(req,res)=>{auth.logout(cookie(req).ninho_refresh);res.clearCookie('ninho_refresh',{path:'/api/v1/auth'});res.status(204).end()});
+  router.get('/me',requireAuth,async(req,res)=>res.json(await identity.findUser(req.auth.sub)));
+  router.get('/homes',requireAuth,async(req,res)=>res.json(await identity.listHomes(req.auth.sub)));
+  router.post('/homes',requireAuth,async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome da residência é obrigatório.',400);const home=await identity.createHome({name,timezone:req.body?.timezone,ownerId:req.auth.sub});await identity.record({type:'HOME_CREATED',homeId:home.id,actorId:req.auth.sub,targetId:home.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(home)}catch(e){next(e)}});
+  router.get('/homes/:homeId/floors',requireAuth,authorizeHome(identity),async(req,res)=>res.json(await identity.listFloors(req.params.homeId)));
+  router.post('/homes/:homeId/floors',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome do piso é obrigatório.',400);const current=await identity.listFloors(req.params.homeId);const floor=await identity.createFloor({homeId:req.params.homeId,name,position:req.body?.position??current.length});if(!floor)throw new AppError('FLOOR_ALREADY_EXISTS','Já existe um piso com esse nome.',409);await identity.record({type:'FLOOR_CREATED',homeId:req.params.homeId,actorId:req.auth.sub,targetId:floor.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(floor)}catch(e){next(e)}});
+  router.get('/homes/:homeId/floors/:floorId/rooms',requireAuth,authorizeHome(identity),async(req,res,next)=>{try{if(!await identity.findFloor(req.params.homeId,req.params.floorId))throw new AppError('FLOOR_NOT_FOUND','Piso não encontrado.',404);res.json(await identity.listRooms(req.params.floorId))}catch(e){next(e)}});
+  router.post('/homes/:homeId/floors/:floorId/rooms',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res,next)=>{try{if(!await identity.findFloor(req.params.homeId,req.params.floorId))throw new AppError('FLOOR_NOT_FOUND','Piso não encontrado.',404);const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome do cômodo é obrigatório.',400);const current=await identity.listRooms(req.params.floorId);const room=await identity.createRoom({floorId:req.params.floorId,name,position:req.body?.position??current.length});if(!room)throw new AppError('ROOM_ALREADY_EXISTS','Já existe um cômodo com esse nome neste piso.',409);await identity.record({type:'ROOM_CREATED',homeId:req.params.homeId,actorId:req.auth.sub,targetId:room.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(room)}catch(e){next(e)}});
+  router.get('/homes/:homeId/audit',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res)=>res.json(await identity.listAudit(req.params.homeId)));
+  router.get('/homes/:homeId/integrations/health',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res)=>res.json(providers?await providers.health():{}));
+  return router;
+}
