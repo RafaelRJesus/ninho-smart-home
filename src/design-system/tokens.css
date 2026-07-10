@@ -1,0 +1,27 @@
+:root {
+  --ne-color-bg: #07110f;
+  --ne-color-surface: #0d1b18;
+  --ne-color-surface-raised: #12241f;
+  --ne-color-text: #effff9;
+  --ne-color-text-muted: #92aaa2;
+  --ne-color-primary: #38f2ac;
+  --ne-color-info: #44c7ff;
+  --ne-color-warning: #ffd166;
+  --ne-color-danger: #ff5d73;
+  --ne-color-offline: #7d8d88;
+  --ne-radius-sm: 8px;
+  --ne-radius-md: 14px;
+  --ne-radius-lg: 22px;
+  --ne-space-1: 4px;
+  --ne-space-2: 8px;
+  --ne-space-3: 12px;
+  --ne-space-4: 16px;
+  --ne-space-6: 24px;
+  --ne-space-8: 32px;
+  --ne-shadow-neon: 0 0 24px rgb(56 242 172 / 18%);
+  --ne-focus-ring: 0 0 0 3px rgb(68 199 255 / 45%);
+  --ne-duration-fast: 120ms;
+  --ne-duration-normal: 220ms;
+}
+
+/* A adoção destes tokens no frontend será incremental durante a Sprint 1. */
