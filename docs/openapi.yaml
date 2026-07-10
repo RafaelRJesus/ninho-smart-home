@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: Ninho API
+  version: 1.0.0-draft
+  description: Contrato inicial versionado conforme a skill backend-domain.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Serviço disponível
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /homes:
+    get:
+      operationId: listHomes
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Residências autorizadas
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /homes/{homeId}/devices:
+    get:
+      operationId: listDevices
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/HomeId'
+      responses:
+        '200':
+          description: Dispositivos normalizados
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /homes/{homeId}/devices/{deviceId}/commands:
+    post:
+      operationId: sendDeviceCommand
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/HomeId'
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestId, capability, value]
+              properties:
+                requestId: { type: string, format: uuid }
+                capability: { type: string }
+                value: {}
+      responses:
+        '202':
+          description: Comando aceito
+        '409':
+          description: Comando duplicado ou conflito de estado
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    HomeId:
+      name: homeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Health:
+      type: object
+      required: [status, timestamp, correlationId]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        timestamp: { type: string, format: date-time }
+        correlationId: { type: string }
+    ApiError:
+      type: object
+      required: [code, message, correlationId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlationId: { type: string }
+  responses:
+    Unauthorized:
+      description: Sessão ausente ou inválida
+    Forbidden:
+      description: Usuário sem acesso ao recurso
