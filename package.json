@@ -1,0 +1,39 @@
+{
+  "name": "casa-ia-tuya",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:web": "vite",
+    "dev:server": "node --watch server/index.js",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server/index.js",
+    "test": "NODE_ENV=test node --test tests/*.test.js",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "env:check": "node scripts/validate-production-env.js",
+    "release:check": "npm run check && npm run env:check && npm audit --audit-level=high"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "6.0.3",
+    "bcryptjs": "3.0.3",
+    "concurrently": "10.0.3",
+    "cors": "2.8.6",
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "lucide-react": "1.24.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "vite": "8.1.4"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "supertest": "7.2.2",
+    "typescript": "7.0.2"
+  }
+}

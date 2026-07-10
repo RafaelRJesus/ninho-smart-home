@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.DS_Store
+data/state.json
+data/*.tmp
+data/test-state.json
+home-assistant-nerd-edition-specs.zip
