@@ -4,6 +4,29 @@
 
 Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de validação em QA.
 
+## Histórias
+
+- Como proprietário, quero criar, consultar, atualizar e excluir residências para manter somente as casas que administro.
+- Como proprietário ou administrador, quero organizar pisos e cômodos para representar a estrutura física da residência.
+- Como proprietário ou administrador, quero cadastrar, mover, renomear e excluir dispositivos para manter o inventário correto.
+- Como morador, quero visualizar o estado online/offline dos dispositivos sem poder alterar a estrutura quando não tiver permissão administrativa.
+
+## Critérios detalhados
+
+- Dado um recurso na versão atual, quando um administrador o altera, então a versão é incrementada e a ação é auditada.
+- Dado um recurso alterado por outra sessão, quando uma versão antiga é enviada, então a API responde `409 VERSION_CONFLICT` sem sobrescrever dados.
+- Dado um cômodo com o mesmo nome no piso, quando outro é criado ou renomeado, então a API responde `409 ROOM_ALREADY_EXISTS`.
+- Dado um identificador externo já usado na residência, quando outro dispositivo é cadastrado, então a API responde `409 DEVICE_ALREADY_EXISTS`.
+- Dado um usuário de outra residência ou sem papel administrativo, quando tenta alterar a estrutura, então a API responde `403` ou `404` sem revelar dados.
+- Dado um piso ou cômodo com dependências, quando sua exclusão é solicitada, então a API bloqueia a operação e informa como resolver.
+
+## Exceções, dependências e riscos
+
+- A residência precisa manter ao menos um proprietário e uma estrutura mínima válida.
+- A exclusão de residência é bloqueada quando é a única residência do proprietário.
+- Migrações PostgreSQL devem ser aplicadas antes do deploy da API.
+- O identificador externo é único por residência; integrações devem reutilizar o dispositivo existente durante sincronização.
+
 ## Escopo
 
 - CRUD de residência
