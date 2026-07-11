@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.2.0
+  version: 1.3.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -199,6 +199,55 @@ paths:
       parameters: [{ $ref: '#/components/parameters/HomeId' }]
       responses:
         '200': { description: Stream SSE filtrado pela residência }
+  /homes/{homeId}/integrations:
+    get:
+      operationId: listIntegrations
+      description: Retorna somente metadados; credenciais cifradas nunca são expostas.
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Integrações configuradas, status e última sincronização }
+  /homes/{homeId}/integrations/{provider}/credentials:
+    put:
+      operationId: saveIntegrationCredentials
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/Provider' }
+      responses:
+        '200': { description: Credenciais cifradas e metadados retornados }
+        '400': { description: Provedor ou credenciais inválidas }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: revokeIntegrationCredentials
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/Provider' }
+      responses: { '204': { description: Credencial revogada } }
+  /homes/{homeId}/integrations/{provider}/health:
+    get:
+      operationId: testIntegration
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/Provider' }
+      responses:
+        '200': { description: Provedor operacional e latência medida }
+        '409': { description: Integração ainda não configurada }
+        '502': { description: Falha isolada do provedor }
+  /homes/{homeId}/integrations/{provider}/sync:
+    post:
+      operationId: syncIntegration
+      description: Importa ou atualiza dispositivos por identificador externo e inicia a assinatura de eventos.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/Provider' }
+      responses:
+        '200': { description: Totais criados/atualizados e horário da sincronização }
+        '409': { description: Integração ainda não configurada }
+        '502': { description: Falha isolada do provedor }
 components:
   securitySchemes:
     cookieAuth:
@@ -221,6 +270,11 @@ components:
       in: query
       required: true
       schema: { type: integer, minimum: 1 }
+    Provider:
+      name: provider
+      in: path
+      required: true
+      schema: { type: string, enum: [tuya, home-assistant] }
   responses:
     Unauthorized:
       description: Sessão ausente ou inválida
