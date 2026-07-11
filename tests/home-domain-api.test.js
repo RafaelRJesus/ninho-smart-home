@@ -54,3 +54,47 @@ test('entradas inválidas e recurso de outra casa são rejeitados',async()=>{
   const crossRoom=await first.agent.post(`/api/v1/homes/${first.home.id}/devices`).send({name:'Tentativa cruzada',roomId:otherRoom.id,room:'Inexistente',type:'plug'});
   assert.equal(crossRoom.status,400);
 });
+
+test('CRUD versionado da estrutura audita alterações e rejeita versões antigas',async()=>{
+  const {agent,home}=await household('structure-owner@ninho.local','Estrutura');
+  const renamedHome=await agent.patch(`/api/v1/homes/${home.id}`).send({name:'Casa versionada',version:home.version});
+  assert.equal(renamedHome.status,200);assert.equal(renamedHome.body.version,2);
+  const staleHome=await agent.patch(`/api/v1/homes/${home.id}`).send({name:'Sobrescrita',version:home.version});
+  assert.equal(staleHome.status,409);assert.equal(staleHome.body.code,'VERSION_CONFLICT');
+
+  const floor=await agent.post(`/api/v1/homes/${home.id}/floors`).send({name:'Superior'});
+  assert.equal(floor.status,201);assert.equal(floor.body.version,1);
+  const renamedFloor=await agent.patch(`/api/v1/homes/${home.id}/floors/${floor.body.id}`).send({name:'Primeiro andar',version:floor.body.version});
+  assert.equal(renamedFloor.status,200);assert.equal(renamedFloor.body.version,2);
+  const room=await agent.post(`/api/v1/homes/${home.id}/rooms`).send({name:'Escritório',floorId:floor.body.id});
+  assert.equal(room.status,201);assert.equal(room.body.floorId,floor.body.id);
+  const renamedRoom=await agent.patch(`/api/v1/homes/${home.id}/rooms/${room.body.id}`).send({name:'Home office',version:room.body.version});
+  assert.equal(renamedRoom.status,200);assert.equal(renamedRoom.body.version,2);
+
+  const device=await agent.post(`/api/v1/homes/${home.id}/devices`).send({name:'Luminária',roomId:room.body.id,type:'light',externalId:'structure-light-1'});
+  assert.equal(device.status,201);assert.equal(device.body.version,1);
+  const duplicate=await agent.post(`/api/v1/homes/${home.id}/devices`).send({name:'Duplicado',roomId:room.body.id,type:'light',externalId:'structure-light-1'});
+  assert.equal(duplicate.status,409);assert.equal(duplicate.body.code,'DEVICE_ALREADY_EXISTS');
+  const moved=await agent.patch(`/api/v1/homes/${home.id}/devices/${device.body.id}`).send({name:'Luminária de mesa',version:device.body.version});
+  assert.equal(moved.status,200);assert.equal(moved.body.version,2);
+  const staleDevice=await agent.patch(`/api/v1/homes/${home.id}/devices/${device.body.id}`).send({name:'Versão antiga',version:device.body.version});
+  assert.equal(staleDevice.status,409);assert.equal(staleDevice.body.code,'VERSION_CONFLICT');
+
+  const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);
+  assert.equal(audit.status,200);
+  for(const type of ['HOME_UPDATED','FLOOR_UPDATED','ROOM_CREATED','ROOM_UPDATED','DEVICE_CREATED','DEVICE_UPDATED'])assert.ok(audit.body.some(item=>item.type===type),type);
+});
+
+test('exclusões estruturais protegem dependências e exigem versão atual',async()=>{
+  const {agent,home}=await household('deletion-owner@ninho.local','Exclusão');
+  const floor=await agent.post(`/api/v1/homes/${home.id}/floors`).send({name:'Anexo'});
+  const room=await agent.post(`/api/v1/homes/${home.id}/rooms`).send({name:'Oficina',floorId:floor.body.id});
+  const blockedFloor=await agent.delete(`/api/v1/homes/${home.id}/floors/${floor.body.id}?version=${floor.body.version}`);
+  assert.equal(blockedFloor.status,409);assert.equal(blockedFloor.body.code,'FLOOR_NOT_EMPTY');
+  const device=await agent.post(`/api/v1/homes/${home.id}/devices`).send({name:'Tomada',roomId:room.body.id,type:'plug'});
+  const blockedRoom=await agent.delete(`/api/v1/homes/${home.id}/rooms/${room.body.id}?version=${room.body.version}`);
+  assert.equal(blockedRoom.status,409);assert.equal(blockedRoom.body.code,'ROOM_NOT_EMPTY');
+  assert.equal((await agent.delete(`/api/v1/homes/${home.id}/devices/${device.body.id}?version=${device.body.version}`)).status,204);
+  assert.equal((await agent.delete(`/api/v1/homes/${home.id}/rooms/${room.body.id}?version=${room.body.version}`)).status,204);
+  assert.equal((await agent.delete(`/api/v1/homes/${home.id}/floors/${floor.body.id}?version=${floor.body.version}`)).status,204);
+});
