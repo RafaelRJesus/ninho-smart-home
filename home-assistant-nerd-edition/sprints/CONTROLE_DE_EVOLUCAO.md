@@ -58,8 +58,11 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] Criação e listagem de residências, pisos e cômodos no PostgreSQL.
 - [x] Segregação e auditoria por residência.
 - [ ] Atualização e exclusão versionadas de residência, pisos e cômodos.
-- [ ] Persistência PostgreSQL de dispositivos e estados.
-- [ ] Frontend consumindo exclusivamente a API residencial versionada.
+- [x] Persistência PostgreSQL de dispositivos, estados, planta, cenas, automações, notificações e energia.
+- [x] Repositórios equivalentes para PostgreSQL e testes em memória.
+- [x] Frontend consumindo a API residencial versionada para o domínio da casa.
+- [x] Testes de segregação entre residências e integração PostgreSQL em QA.
+- [ ] Remoção definitiva das rotas e do `Store` legados após a janela de compatibilidade.
 
 ## Sprint 03 — Home Assistant e Tuya
 

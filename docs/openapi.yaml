@@ -1,90 +1,147 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.0.0-draft
-  description: Contrato inicial versionado conforme a skill backend-domain.
+  version: 1.1.0
+  description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
 paths:
-  /health:
-    get:
-      operationId: getHealth
+  /auth/login:
+    post:
+      operationId: login
       responses:
-        '200':
-          description: Serviço disponível
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Health' }
+        '200': { description: Sessão criada }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /homes:
     get:
       operationId: listHomes
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [] }]
       responses:
-        '200':
-          description: Residências autorizadas
-        '401': { $ref: '#/components/responses/Unauthorized' }
+        '200': { description: Residências autorizadas }
+    post:
+      operationId: createHome
+      security: [{ cookieAuth: [] }]
+      responses:
+        '201': { description: Residência criada com piso e ambientes iniciais }
+  /homes/{homeId}/rooms:
+    get:
+      operationId: listRooms
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Ambientes da residência }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createRoom
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '201': { description: Ambiente criado }
   /homes/{homeId}/devices:
     get:
       operationId: listDevices
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/HomeId'
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
       responses:
-        '200':
-          description: Dispositivos normalizados
+        '200': { description: Dispositivos normalizados da residência }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /homes/{homeId}/devices/{deviceId}/commands:
     post:
-      operationId: sendDeviceCommand
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/HomeId'
-        - name: deviceId
-          in: path
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [requestId, capability, value]
-              properties:
-                requestId: { type: string, format: uuid }
-                capability: { type: string }
-                value: {}
+      operationId: createDevice
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
       responses:
-        '202':
-          description: Comando aceito
-        '409':
-          description: Comando duplicado ou conflito de estado
+        '201': { description: Dispositivo persistido }
+  /homes/{homeId}/devices/{deviceId}:
+    patch:
+      operationId: updateDevice
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { name: deviceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Dispositivo atualizado }
+        '404': { description: Dispositivo não encontrado na residência }
+  /homes/{homeId}/floorplan:
+    get:
+      operationId: getFloorplan
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Planta e versão atuais }
+    put:
+      operationId: saveFloorplan
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Nova versão da planta persistida }
+  /homes/{homeId}/scenes:
+    get:
+      operationId: listScenes
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Cenas da residência }
+    post:
+      operationId: createScene
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '201': { description: Cena criada }
+  /homes/{homeId}/automations:
+    get:
+      operationId: listAutomations
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Automações da residência }
+    post:
+      operationId: createAutomation
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '201': { description: Automação criada }
+  /homes/{homeId}/notifications:
+    get:
+      operationId: listNotifications
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Notificações da residência }
+  /homes/{homeId}/energy:
+    get:
+      operationId: getEnergy
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Leituras, total, custo e configuração }
+  /homes/{homeId}/assistant:
+    post:
+      operationId: executeAssistantCommand
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Comando interpretado dentro da residência }
+  /homes/{homeId}/events:
+    get:
+      operationId: streamHomeEvents
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Stream SSE filtrado pela residência }
 components:
   securitySchemes:
-    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: ninho_access
   parameters:
     HomeId:
       name: homeId
       in: path
       required: true
       schema: { type: string, format: uuid }
-  schemas:
-    Health:
-      type: object
-      required: [status, timestamp, correlationId]
-      properties:
-        status: { type: string, enum: [ok, degraded] }
-        timestamp: { type: string, format: date-time }
-        correlationId: { type: string }
-    ApiError:
-      type: object
-      required: [code, message, correlationId]
-      properties:
-        code: { type: string }
-        message: { type: string }
-        correlationId: { type: string }
   responses:
     Unauthorized:
       description: Sessão ausente ou inválida
     Forbidden:
-      description: Usuário sem acesso ao recurso
+      description: Usuário sem acesso à residência

@@ -20,12 +20,12 @@ O acompanhamento incremental está em `home-assistant-nerd-edition/sprints/CONTR
 | Dashboard web | Parcial | `OperationalDashboard.jsx`, SSE e workspace operacional | Completar segurança, internet, câmeras e testes UI |
 | Planta baixa | Parcial | `FloorplanEditor.jsx` e `floorplan.js` | Upload, versões, desenho, tela cheia e teste com 200 dispositivos |
 | Residências/pisos/cômodos | Parcial avançado | API v1, RBAC e PostgreSQL | Completar CRUD e migrar frontend legado |
-| Dispositivos | Parcial | Domínio, comandos e adapters | Migrar estado local para PostgreSQL/API v1 |
+| Dispositivos | Parcial avançado | PostgreSQL, API v1 residencial, comandos e adapters | Encerrar rotas legadas após compatibilidade |
 | Tuya | Parcial avançado | Adapter, assinatura, capacidades, sync e resiliência | Confirmação assíncrona e eventos persistentes |
 | Home Assistant | Parcial avançado | Adapter REST/WebSocket e documentação | Configuração completa na UI e validação real em produção |
 | Assistente | Parcial | Comandos locais e OpenAI opcional | Operar apenas sobre serviços residenciais autorizados |
 | Autenticação/RBAC | Parcial avançado | Sessão HttpOnly, refresh, RBAC e Turnstile | Recuperação de senha e MFA |
-| Banco relacional | Parcial | PostgreSQL para identidade, RBAC, auditoria e cofre | Persistir todo o domínio residencial |
+| Banco relacional | Parcial avançado | PostgreSQL para identidade, RBAC, cofre e domínio residencial | Backup/restore e retirada do Store legado |
 | Tempo real | Parcial avançado | SSE e EventBus | Confirmação ponta a ponta dos provedores |
 | Cenas/automações | Parcial avançado | CRUD, execução, deduplicação e eventos | Gatilhos contínuos, conflitos e PostgreSQL |
 | Energia/notificações | Parcial | Workspace, tarifa, leituras e notificações internas | Canais externos, agregações e alertas |
@@ -45,16 +45,15 @@ O acompanhamento incremental está em `home-assistant-nerd-edition/sprints/CONTR
 
 ## Riscos atuais
 
-1. Parte do frontend ainda consome `/api` e o estado JSON, fora do domínio residencial versionado.
-2. Dispositivos, plantas, cenas, automações, notificações e energia ainda não possuem persistência PostgreSQL completa.
-3. Confirmações de estado do provedor ainda não fecham todo o fluxo assíncrono do comando.
+1. Rotas legadas `/api` e o `Store` permanecem temporariamente no backend para compatibilidade, embora o frontend utilize a API v1 residencial.
+2. Confirmações de estado do provedor ainda não fecham todo o fluxo assíncrono do comando.
 4. Não existem testes UI/E2E nem auditoria WCAG automatizada.
 5. Backup/restore e rollback estão documentados, mas ainda não foram executados com evidência.
 6. Alertas, tracing e fila de falhas ainda não estão ativos.
 
 ## Próxima linha de execução
 
-Consolidar a Sprint 02: migrar o domínio residencial restante para PostgreSQL, expor tudo pela API v1 autenticada, atualizar o frontend e eliminar gradualmente o estado JSON de produção.
+Concluir a retirada das rotas legadas após validar a migration em QA/produção e seguir para recuperação de senha na Sprint 01.
 
 ## Definition of Ready adaptada
 
