@@ -2,53 +2,64 @@
 
 Referência normativa: `home-assistant-nerd-edition/`.
 
+Data da revisão: 2026-07-10.
+
 ## Objetivo do produto
 
 Como morador, quero centralizar dispositivos e automações de uma ou mais residências para monitorar e controlar a casa com segurança, contexto visual e rastreabilidade.
+
+## Fonte de verdade do progresso
+
+O acompanhamento incremental está em `home-assistant-nerd-edition/sprints/CONTROLE_DE_EVOLUCAO.md`. O checklist deve ser atualizado no mesmo commit de cada evolução, evitando reauditorias completas sem mudança de requisito ou regressão.
 
 ## Estado atual
 
 | Capacidade | Estado | Evidência | Lacuna principal |
 |---|---|---|---|
-| Dashboard web | Parcial | `src/main.jsx` | Componentização, tempo real e testes UI |
-| Planta baixa | Parcial | `Plant` em `src/main.jsx` | Zoom, pan, pisos, versões e camadas |
-| Cômodos | Parcial | `/api/rooms` | Pisos, residência e autorização |
-| Dispositivos | Parcial | `/api/devices` | Domínio persistente, capacidades e auditoria |
-| Tuya | Parcial | `server/tuya-client.js` | Adapter, retry, circuit breaker e eventos |
-| Home Assistant | Ausente | — | Adapter e eventos |
-| Assistente | Parcial | `server/assistant.js` | Autorização e ferramentas de domínio |
-| Autenticação/RBAC | Ausente | — | Usuários, sessão e segregação |
-| Banco relacional | Ausente | JSON local | Migrações, integridade e backup |
-| Tempo real | Ausente | — | SSE/WebSocket/MQTT |
-| Cenas/automações | Ausente | — | Domínio e prevenção de loops |
-| Energia/notificações | Ausente | — | Persistência, canais e preferências |
-| Observabilidade | Inicial | `/api/health` | Logs estruturados, métricas e tracing |
-| CI/CD | Ausente | — | Pipeline e gates |
+| Fundação | Concluída | CI, Security Analysis, contratos, tokens e configurações por ambiente | Manter gates e evidências a cada PR |
+| Dashboard web | Parcial | `OperationalDashboard.jsx`, SSE e workspace operacional | Completar segurança, internet, câmeras e testes UI |
+| Planta baixa | Parcial | `FloorplanEditor.jsx` e `floorplan.js` | Upload, versões, desenho, tela cheia e teste com 200 dispositivos |
+| Residências/pisos/cômodos | Parcial avançado | API v1, RBAC e PostgreSQL | Completar CRUD e migrar frontend legado |
+| Dispositivos | Parcial | Domínio, comandos e adapters | Migrar estado local para PostgreSQL/API v1 |
+| Tuya | Parcial avançado | Adapter, assinatura, capacidades, sync e resiliência | Confirmação assíncrona e eventos persistentes |
+| Home Assistant | Parcial avançado | Adapter REST/WebSocket e documentação | Configuração completa na UI e validação real em produção |
+| Assistente | Parcial | Comandos locais e OpenAI opcional | Operar apenas sobre serviços residenciais autorizados |
+| Autenticação/RBAC | Parcial avançado | Sessão HttpOnly, refresh, RBAC e Turnstile | Recuperação de senha e MFA |
+| Banco relacional | Parcial | PostgreSQL para identidade, RBAC, auditoria e cofre | Persistir todo o domínio residencial |
+| Tempo real | Parcial avançado | SSE e EventBus | Confirmação ponta a ponta dos provedores |
+| Cenas/automações | Parcial avançado | CRUD, execução, deduplicação e eventos | Gatilhos contínuos, conflitos e PostgreSQL |
+| Energia/notificações | Parcial | Workspace, tarifa, leituras e notificações internas | Canais externos, agregações e alertas |
+| Segurança/LGPD | Parcial avançado | Hardening, cofre, CAPTCHA, audit e security pipeline | MFA e direitos do titular |
+| Observabilidade | Parcial | Logs, correlation ID, métricas e health checks | Tracing, dashboard, alertas e DLQ |
+| Qualidade | Parcial avançado | 45 testes, smoke, carga, estresse e pipeline diária | UI/E2E, acessibilidade e volume da planta |
+| CI/CD | Parcial avançado | CI, CodeQL, secret scan, QA efêmero e deploy Render | Aprovação de produção e rollback executado |
 
-## Hipóteses que exigem decisão
+## Decisões vigentes
 
-- H1: o produto suportará múltiplas residências e múltiplos usuários.
-- H2: PostgreSQL será o banco relacional principal.
-- H3: SSE será o primeiro transporte de eventos; MQTT ficará restrito aos adapters.
-- H4: Redis será introduzido somente quando cache/fila forem necessários.
-- H5: o frontend e o backend migrarão incrementalmente para TypeScript.
-- H6: ações críticas serão fechadura, portão, alarme e exclusões destrutivas.
+- PostgreSQL é o banco relacional principal.
+- SSE é o transporte inicial de eventos servidor→cliente; MQTT permanece nos adapters.
+- Redis/fila será introduzido quando automações e notificações exigirem processamento persistente.
+- A migração para TypeScript permanece incremental.
+- Fechadura, portão, alarme e exclusões destrutivas são ações críticas.
+- DEV usa configuração local, QA roda isolado no GitHub Actions e PROD roda no Render.
 
-Nenhuma hipótese deve virar regra de produção sem ADR aprovado.
+## Riscos atuais
 
-## Riscos imediatos
+1. Parte do frontend ainda consome `/api` e o estado JSON, fora do domínio residencial versionado.
+2. Dispositivos, plantas, cenas, automações, notificações e energia ainda não possuem persistência PostgreSQL completa.
+3. Confirmações de estado do provedor ainda não fecham todo o fluxo assíncrono do comando.
+4. Não existem testes UI/E2E nem auditoria WCAG automatizada.
+5. Backup/restore e rollback estão documentados, mas ainda não foram executados com evidência.
+6. Alertas, tracing e fila de falhas ainda não estão ativos.
 
-1. Credenciais reais dependem de `.env` local sem secrets manager.
-2. Ausência de autenticação permite acesso irrestrito ao backend.
-3. Estado em JSON não oferece concorrência ou integridade referencial.
-4. Regras de negócio estão misturadas com rotas e componentes.
-5. Falha da Tuya pode degradar todas as consultas de dispositivos.
-6. Não há confirmação assíncrona do estado final de comandos.
+## Próxima linha de execução
+
+Consolidar a Sprint 02: migrar o domínio residencial restante para PostgreSQL, expor tudo pela API v1 autenticada, atualizar o frontend e eliminar gradualmente o estado JSON de produção.
 
 ## Definition of Ready adaptada
 
-Uma história só entra em execução quando possuir objetivo, critérios Dado/Quando/Então, exceções, contrato de API, riscos, dependências e massa de teste.
+Uma história só entra em execução quando possui objetivo, critérios Dado/Quando/Então, exceções, contrato de API, riscos, dependências e massa de teste.
 
 ## Definition of Done adaptada
 
-Código revisado, critérios atendidos, testes unitários/API/UI aprovados, sem vulnerabilidade crítica/alta, logs e documentação atualizados, evidência de QA e rollback aplicável documentado.
+Código revisado, critérios atendidos, testes unitários/API/UI aplicáveis aprovados, sem vulnerabilidade crítica/alta, logs e documentação atualizados, evidência de QA e rollback aplicável documentado.
