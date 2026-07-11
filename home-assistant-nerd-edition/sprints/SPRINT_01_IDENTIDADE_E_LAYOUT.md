@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de validação em QA.
+Como morador, quero acessar e recuperar minha conta em qualquer dispositivo para controlar somente as residências autorizadas com segurança e uma interface consistente.
 
 ## Escopo
 
@@ -15,10 +15,28 @@ Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de val
 
 ## Critérios de aceite
 
-- Usuário autenticado acessa o dashboard
-- Usuário sem sessão é redirecionado
-- Menu destaca a página atual
-- Layout funciona em desktop, tablet e mobile
+- Dado usuário autenticado, quando abrir a aplicação, então acessa o dashboard da residência autorizada.
+- Dado usuário sem sessão, quando abrir uma rota da aplicação, então visualiza o login sem conteúdo residencial.
+- Dado e-mail válido ou inexistente, quando solicitar recuperação, então recebe a mesma resposta genérica.
+- Dado token válido, quando cadastrar senha com ao menos dez caracteres, então o token é consumido e as sessões anteriores são invalidadas.
+- Dado token expirado, inválido ou já usado, quando tentar redefinir, então a operação é rejeitada sem alterar a senha.
+- Dada mudança de página, quando navegar pelo menu, então o item atual fica destacado visual e semanticamente.
+- Dado viewport desktop ou mobile, quando usar autenticação e navegação principal, então o conteúdo essencial permanece visível, rotulado e navegável por teclado.
+
+## Exceções e riscos
+
+- O endpoint nunca informa se o e-mail existe.
+- Tokens são aleatórios, armazenados somente como SHA-256, expiram em 30 minutos e funcionam uma vez.
+- A recuperação depende de SMTP configurado por ambiente; QA usa massa isolada.
+- CAPTCHA protege solicitação e redefinição em produção.
+- Nenhuma senha, token ou conteúdo do e-mail pode aparecer em log ou evidência de teste.
+
+## Dependências
+
+- `APP_URL` pública correta.
+- Secrets SMTP exclusivos por ambiente.
+- PostgreSQL com migration `0003_password_recovery.sql`.
+- Chromium Playwright no ambiente QA.
 
 ## Testes obrigatórios
 
