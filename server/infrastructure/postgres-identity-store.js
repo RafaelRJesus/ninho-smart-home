@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
-const user=row=>row&&({id:row.id,email:row.email,displayName:row.display_name,status:row.status});
+const user=row=>row&&({id:row.id,email:row.email,displayName:row.display_name,status:row.status,sessionVersion:row.session_version||0});
 const home=row=>row&&({id:row.id,name:row.name,timezone:row.timezone,createdAt:row.created_at});
 const floor=row=>row&&({id:row.id,homeId:row.home_id,name:row.name,position:row.position,createdAt:row.created_at});
 const room=row=>row&&({id:row.id,floorId:row.floor_id,name:row.name,position:row.position,createdAt:row.created_at});
@@ -11,6 +11,11 @@ export class PostgresIdentityStore {
   async createUser({email,password,displayName}){const normalized=email.trim().toLowerCase();const passwordHash=await bcrypt.hash(password,12);try{const result=await this.pool.query('INSERT INTO users(email,password_hash,display_name) VALUES($1,$2,$3) RETURNING *',[normalized,passwordHash,displayName]);return user(result.rows[0]);}catch(error){if(error.code==='23505')return null;throw error;}}
   async authenticate(email,password){const result=await this.pool.query("SELECT * FROM users WHERE email=$1 AND status='active'",[String(email).trim().toLowerCase()]);const row=result.rows[0];return row&&await bcrypt.compare(String(password),row.password_hash)?user(row):null;}
   async findUser(id){return user((await this.pool.query('SELECT * FROM users WHERE id=$1',[id])).rows[0]);}
+  async findUserByEmail(email){return user((await this.pool.query('SELECT * FROM users WHERE email=$1',[String(email).trim().toLowerCase()])).rows[0]);}
+  async savePasswordReset({userId,tokenHash,expiresAt}){const client=await this.pool.connect();try{await client.query('BEGIN');await client.query('DELETE FROM password_reset_tokens WHERE user_id=$1 AND used_at IS NULL',[userId]);await client.query('INSERT INTO password_reset_tokens(token_hash,user_id,expires_at) VALUES($1,$2,$3)',[tokenHash,userId,expiresAt]);await client.query('COMMIT');}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}}
+  async consumePasswordReset(tokenHash){return (await this.pool.query('UPDATE password_reset_tokens SET used_at=now() WHERE token_hash=$1 AND used_at IS NULL AND expires_at>now() RETURNING user_id',[tokenHash])).rows[0]?.user_id||null;}
+  async updatePassword(userId,password){const passwordHash=await bcrypt.hash(password,12);return Boolean((await this.pool.query('UPDATE users SET password_hash=$2,session_version=session_version+1,updated_at=now() WHERE id=$1',[userId,passwordHash])).rowCount);}
+  async getSessionVersion(userId){return (await this.pool.query('SELECT session_version FROM users WHERE id=$1',[userId])).rows[0]?.session_version??null;}
   async createHome({name,timezone='America/Sao_Paulo',ownerId}){const client=await this.pool.connect();try{await client.query('BEGIN');const created=home((await client.query('INSERT INTO homes(name,timezone) VALUES($1,$2) RETURNING *',[name,timezone])).rows[0]);await client.query("INSERT INTO home_members(home_id,user_id,role) VALUES($1,$2,'owner')",[created.id,ownerId]);await client.query('COMMIT');return created;}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}}
   async listHomes(userId){return (await this.pool.query('SELECT h.* FROM homes h JOIN home_members m ON m.home_id=h.id WHERE m.user_id=$1 ORDER BY h.created_at',[userId])).rows.map(home);}
   async getRole(homeId,userId){return (await this.pool.query('SELECT role FROM home_members WHERE home_id=$1 AND user_id=$2',[homeId,userId])).rows[0]?.role||null;}

@@ -84,3 +84,5 @@ test('energia ausente não é convertida em zero e tarifa é configurável', asy
   const measured=await agent.get('/api/energy');
   assert.equal(measured.body.totalKwh,2.5);assert.equal(measured.body.estimatedCost,3);
 });
+
+test('recuperação responde de forma indistinguível para e-mail existente ou ausente',async()=>{const known=await request(app).post('/api/v1/auth/password/forgot').send({email:'api-tests@ninho.local'});const unknown=await request(app).post('/api/v1/auth/password/forgot').send({email:'ausente@ninho.local'});assert.equal(known.status,202);assert.equal(unknown.status,202);assert.equal(known.body.message,unknown.body.message);});

@@ -9,13 +9,15 @@ const accessCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_EN
 const setSession=(res,result)=>{res.cookie('ninho_access',result.accessToken,accessCookie);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);};
 
 export function createV1Router({auth,identity,tokens,providers,vault,credentialStore=identity,turnstile,homeRepository,events,controlExternal}) {
-  const router=express.Router();const requireAuth=authenticate(tokens);
+  const router=express.Router();const requireAuth=authenticate(tokens,identity);
   router.get('/health',(req,res)=>res.json({status:'ok',timestamp:new Date().toISOString(),correlationId:req.correlationId}));
   router.get('/auth/config',(_req,res)=>res.json(turnstile.publicConfig()));
   router.post('/auth/register',turnstile.middleware('register'),async(req,res,next)=>{try{const result=await auth.register(req.body);setSession(res,result);res.status(201).json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
   router.post('/auth/login',turnstile.middleware('login'),async(req,res,next)=>{try{const result=await auth.login(req.body?.email,req.body?.password);setSession(res,result);res.json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
   router.post('/auth/refresh',async(req,res,next)=>{try{const result=await auth.refresh(cookie(req).ninho_refresh);setSession(res,result);res.json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
   router.post('/auth/logout',async(req,res)=>{await auth.logout(cookie(req).ninho_refresh);res.clearCookie('ninho_access',{path:'/'});res.clearCookie('ninho_refresh',{path:'/api/v1/auth'});res.status(204).end()});
+  router.post('/auth/password/forgot',turnstile.middleware('password-recovery'),async(req,res,next)=>{try{await auth.requestPasswordReset(req.body?.email);res.status(202).json({message:'Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.'})}catch(e){next(e)}});
+  router.post('/auth/password/reset',turnstile.middleware('password-reset'),async(req,res,next)=>{try{await auth.resetPassword(req.body?.token,req.body?.password);res.status(204).end()}catch(e){next(e)}});
   router.get('/me',requireAuth,async(req,res)=>res.json(await identity.findUser(req.auth.sub)));
   router.get('/homes',requireAuth,async(req,res)=>res.json(await identity.listHomes(req.auth.sub)));
   router.post('/homes',requireAuth,async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome da residência é obrigatório.',400);const home=await identity.createHome({name,timezone:req.body?.timezone,ownerId:req.auth.sub});const floor=await identity.createFloor({homeId:home.id,name:'Térreo',position:0});for(const [position,room] of ['Sala','Quarto','Cozinha','Banheiro'].entries())await identity.createRoom({floorId:floor.id,name:room,position});await identity.record({type:'HOME_CREATED',homeId:home.id,actorId:req.auth.sub,targetId:home.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(home)}catch(e){next(e)}});
