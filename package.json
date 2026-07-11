@@ -13,6 +13,7 @@
     "test:unit": "NODE_ENV=test node --test tests/application.test.js tests/assistant.test.js tests/credential-vault.test.js tests/domain.test.js tests/events.test.js tests/floorplan.test.js tests/postgres-store.test.js tests/turnstile.test.js tests/tuya.test.js",
     "test:integration": "NODE_ENV=test node --test tests/api.test.js tests/auth.test.js tests/integrations.test.js tests/security-observability.test.js",
     "test:smoke": "node scripts/smoke-production.js",
+    "test:stress": "node scripts/stress-test.js",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run test && npm run build",
     "env:check": "node scripts/validate-production-env.js",

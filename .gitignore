@@ -5,4 +5,5 @@ dist
 data/state.json
 data/*.tmp
 data/test-state.json
+data/stress-state.json
 home-assistant-nerd-edition-specs.zip

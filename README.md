@@ -108,6 +108,7 @@ Exemplos:
 npm test       # testes de API, comandos e Tuya
 npm run build  # compila o frontend
 npm run check  # executa toda a validação
+npm run test:stress # teste local de carga concorrente
 ```
 
 ## Pipeline de qualidade
@@ -119,9 +120,15 @@ Cada push e pull request executa jobs independentes no GitHub Actions:
 - contratos TypeScript;
 - auditoria de dependências em severidade alta;
 - build de produção com artifact por sete dias;
-- smoke test de health, readiness, autenticação e frontend compilado.
+- smoke test de health, readiness, autenticação e frontend compilado;
+- teste de carga isolado com 40 conexões concorrentes em cada push;
+- teste de estresse semanal, ou manual, com 100 conexões concorrentes.
 
-O build e o smoke test só iniciam quando todos os gates anteriores são aprovados. Execuções antigas da mesma branch são canceladas automaticamente.
+O teste de carga reprova a pipeline se encontrar falhas de rede, respostas 5xx, ausência de respostas bem-sucedidas, latência p99 acima do limite ou falta de recuperação após o pico. Respostas 429 são esperadas na rota protegida e comprovam que o servidor está rejeitando excesso de tráfego de maneira controlada.
+
+O build, o smoke test e o teste de carga só iniciam quando os gates anteriores são aprovados. Execuções antigas da mesma branch são canceladas automaticamente. O workflow `Scheduled Stress Test` também pode ser iniciado na aba **Actions**, informando quantidade de conexões e duração.
+
+Esses testes executam contra um servidor efêmero e isolado no GitHub Actions; eles não geram tráfego contra produção. Os resultados detectam regressões e validam os mecanismos de proteção, mas não substituem planejamento de capacidade com infraestrutura equivalente à produção.
 
 O backend renova tokens Tuya, assina chamadas com HMAC-SHA256, descobre as funções suportadas por cada aparelho, valida entradas e mantém as posições da planta após reinicializações.
 
