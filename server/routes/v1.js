@@ -1,13 +1,14 @@
 import express from 'express';
 import { AppError } from '../core/app-error.js';
 import { authenticate, authorizeHome } from '../security/auth-middleware.js';
+import { createHomeDomainRouter } from './home-domain.js';
 
 const cookie = req => Object.fromEntries(String(req.get('cookie')||'').split(';').map(item=>item.trim().split('=').map(decodeURIComponent)).filter(pair=>pair.length===2));
 const refreshCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_ENV==='production',path:'/api/v1/auth',maxAge:7*24*60*60*1000};
 const accessCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_ENV==='production',path:'/',maxAge:15*60*1000};
 const setSession=(res,result)=>{res.cookie('ninho_access',result.accessToken,accessCookie);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);};
 
-export function createV1Router({auth,identity,tokens,providers,vault,credentialStore=identity,turnstile}) {
+export function createV1Router({auth,identity,tokens,providers,vault,credentialStore=identity,turnstile,homeRepository,events,controlExternal}) {
   const router=express.Router();const requireAuth=authenticate(tokens);
   router.get('/health',(req,res)=>res.json({status:'ok',timestamp:new Date().toISOString(),correlationId:req.correlationId}));
   router.get('/auth/config',(_req,res)=>res.json(turnstile.publicConfig()));
@@ -17,7 +18,7 @@ export function createV1Router({auth,identity,tokens,providers,vault,credentialS
   router.post('/auth/logout',async(req,res)=>{await auth.logout(cookie(req).ninho_refresh);res.clearCookie('ninho_access',{path:'/'});res.clearCookie('ninho_refresh',{path:'/api/v1/auth'});res.status(204).end()});
   router.get('/me',requireAuth,async(req,res)=>res.json(await identity.findUser(req.auth.sub)));
   router.get('/homes',requireAuth,async(req,res)=>res.json(await identity.listHomes(req.auth.sub)));
-  router.post('/homes',requireAuth,async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome da residência é obrigatório.',400);const home=await identity.createHome({name,timezone:req.body?.timezone,ownerId:req.auth.sub});await identity.record({type:'HOME_CREATED',homeId:home.id,actorId:req.auth.sub,targetId:home.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(home)}catch(e){next(e)}});
+  router.post('/homes',requireAuth,async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome da residência é obrigatório.',400);const home=await identity.createHome({name,timezone:req.body?.timezone,ownerId:req.auth.sub});const floor=await identity.createFloor({homeId:home.id,name:'Térreo',position:0});for(const [position,room] of ['Sala','Quarto','Cozinha','Banheiro'].entries())await identity.createRoom({floorId:floor.id,name:room,position});await identity.record({type:'HOME_CREATED',homeId:home.id,actorId:req.auth.sub,targetId:home.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(home)}catch(e){next(e)}});
   router.get('/homes/:homeId/floors',requireAuth,authorizeHome(identity),async(req,res)=>res.json(await identity.listFloors(req.params.homeId)));
   router.post('/homes/:homeId/floors',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name)throw new AppError('VALIDATION_ERROR','Nome do piso é obrigatório.',400);const current=await identity.listFloors(req.params.homeId);const floor=await identity.createFloor({homeId:req.params.homeId,name,position:req.body?.position??current.length});if(!floor)throw new AppError('FLOOR_ALREADY_EXISTS','Já existe um piso com esse nome.',409);await identity.record({type:'FLOOR_CREATED',homeId:req.params.homeId,actorId:req.auth.sub,targetId:floor.id,result:'succeeded',correlationId:req.correlationId});res.status(201).json(floor)}catch(e){next(e)}});
   router.get('/homes/:homeId/floors/:floorId/rooms',requireAuth,authorizeHome(identity),async(req,res,next)=>{try{if(!await identity.findFloor(req.params.homeId,req.params.floorId))throw new AppError('FLOOR_NOT_FOUND','Piso não encontrado.',404);res.json(await identity.listRooms(req.params.floorId))}catch(e){next(e)}});
@@ -27,5 +28,6 @@ export function createV1Router({auth,identity,tokens,providers,vault,credentialS
   router.get('/homes/:homeId/integrations',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res)=>res.json(await credentialStore.listIntegrations(req.params.homeId)));
   router.put('/homes/:homeId/integrations/:provider/credentials',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res,next)=>{try{const provider=String(req.params.provider);if(!['tuya','home-assistant','openai'].includes(provider))throw new AppError('VALIDATION_ERROR','Provedor não suportado.',400);const credentials=req.body?.credentials;if(!credentials||typeof credentials!=='object'||Array.isArray(credentials)||!Object.keys(credentials).length)throw new AppError('VALIDATION_ERROR','Credenciais obrigatórias.',400);const sealed=vault.seal(credentials,{homeId:req.params.homeId,provider});const integration=await credentialStore.saveIntegrationCredential({homeId:req.params.homeId,provider,sealed,actorId:req.auth.sub});await identity.record({type:'INTEGRATION_CREDENTIALS_ROTATED',homeId:req.params.homeId,actorId:req.auth.sub,targetId:provider,result:'succeeded',correlationId:req.correlationId,metadata:{keyVersion:sealed.keyVersion}});res.json(integration)}catch(e){next(e)}});
   router.delete('/homes/:homeId/integrations/:provider/credentials',requireAuth,authorizeHome(identity,['owner','admin']),async(req,res)=>{const removed=await credentialStore.deleteIntegrationCredential(req.params.homeId,req.params.provider);await identity.record({type:'INTEGRATION_CREDENTIALS_REVOKED',homeId:req.params.homeId,actorId:req.auth.sub,targetId:req.params.provider,result:removed?'succeeded':'not_found',correlationId:req.correlationId});res.status(removed?204:404).end()});
+  if(homeRepository)router.use('/homes/:homeId',requireAuth,authorizeHome(identity),createHomeDomainRouter({identity,repository:homeRepository,events,controlExternal}));
   return router;
 }

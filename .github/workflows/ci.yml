@@ -44,6 +44,34 @@ jobs:
       - run: npm ci
       - run: npm run test:integration
 
+  postgres-integration:
+    name: PostgreSQL domain integration
+    environment: ${{ github.event_name == 'pull_request' && 'qa' || 'production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ninho_qa
+          POSTGRES_PASSWORD: ninho_qa
+          POSTGRES_DB: ninho_qa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ninho_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run test:postgres
+        env:
+          DATABASE_URL: postgresql://ninho_qa:ninho_qa@127.0.0.1:5432/ninho_qa
+          DATABASE_SSL: "false"
+
   static-analysis:
     name: Lint and TypeScript contracts
     runs-on: ubuntu-latest
@@ -69,7 +97,7 @@ jobs:
 
   build:
     name: Production build
-    needs: [unit-tests, integration-tests, static-analysis, dependency-audit]
+    needs: [unit-tests, integration-tests, postgres-integration, static-analysis, dependency-audit]
     environment: ${{ github.event_name == 'pull_request' && 'qa' || 'production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -129,6 +157,7 @@ jobs:
     needs:
       - unit-tests
       - integration-tests
+      - postgres-integration
       - static-analysis
       - dependency-audit
       - build
@@ -147,6 +176,7 @@ jobs:
           EMAIL_TO: rafael.sri@icloud.com
           UNIT_RESULT: ${{ needs.unit-tests.result }}
           INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
+          POSTGRES_RESULT: ${{ needs.postgres-integration.result }}
           STATIC_RESULT: ${{ needs.static-analysis.result }}
           AUDIT_RESULT: ${{ needs.dependency-audit.result }}
           BUILD_RESULT: ${{ needs.build.result }}
