@@ -29,8 +29,6 @@ services:
         value: "true"
       - key: REQUIRE_HTTPS
         value: "true"
-      - key: CORS_ORIGIN
-        value: https://ninho-smart-home.onrender.com
       - key: APP_URL
         value: https://ninho-smart-home.onrender.com
       - key: SMTP_HOST
