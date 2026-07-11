@@ -33,7 +33,8 @@ export class MemoryIdentityStore {
   async saveIntegrationCredential({homeId,provider,sealed,actorId}){const id=`${homeId}:${provider}`;const current=this.integrations.get(id);const item={id,homeId,provider,sealed,status:'configured',createdAt:current?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:actorId};this.integrations.set(id,item);return this.publicIntegration(item);}
   async findIntegrationCredential(homeId,provider){const item=this.integrations.get(`${homeId}:${provider}`);return item?structuredClone(item):null;}
   async listIntegrations(homeId){return [...this.integrations.values()].filter(item=>item.homeId===homeId).map(item=>this.publicIntegration(item));}
+  async markIntegrationSynced(homeId,provider,syncedAt){const item=this.integrations.get(`${homeId}:${provider}`);if(!item)return null;item.lastSyncAt=syncedAt;item.status='connected';item.updatedAt=syncedAt;return this.publicIntegration(item);}
   async deleteIntegrationCredential(homeId,provider){return this.integrations.delete(`${homeId}:${provider}`);}
-  publicIntegration(item){return {id:item.id,homeId:item.homeId,provider:item.provider,status:item.status,keyVersion:item.sealed.keyVersion,createdAt:item.createdAt,updatedAt:item.updatedAt};}
+  publicIntegration(item){return {id:item.id,homeId:item.homeId,provider:item.provider,status:item.status,keyVersion:item.sealed.keyVersion,lastSyncAt:item.lastSyncAt||null,createdAt:item.createdAt,updatedAt:item.updatedAt};}
   revoke(jti){this.revokedSessions.add(jti)} isRevoked(jti){return this.revokedSessions.has(jti)}
 }
