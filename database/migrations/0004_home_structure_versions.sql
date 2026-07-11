@@ -1,0 +1,11 @@
+BEGIN;
+
+ALTER TABLE homes ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+ALTER TABLE floors ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_home_external_id
+  ON devices(home_id, external_id);
+
+COMMIT;
