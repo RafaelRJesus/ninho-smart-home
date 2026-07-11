@@ -72,6 +72,27 @@ jobs:
           DATABASE_URL: postgresql://ninho_qa:ninho_qa@127.0.0.1:5432/ninho_qa
           DATABASE_SSL: "false"
 
+  interface-e2e:
+    name: Interface E2E desktop and mobile
+    environment: ${{ github.event_name == 'pull_request' && 'qa' || 'production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidence
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   static-analysis:
     name: Lint and TypeScript contracts
     runs-on: ubuntu-latest
@@ -97,7 +118,7 @@ jobs:
 
   build:
     name: Production build
-    needs: [unit-tests, integration-tests, postgres-integration, static-analysis, dependency-audit]
+    needs: [unit-tests, integration-tests, postgres-integration, interface-e2e, static-analysis, dependency-audit]
     environment: ${{ github.event_name == 'pull_request' && 'qa' || 'production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -158,6 +179,7 @@ jobs:
       - unit-tests
       - integration-tests
       - postgres-integration
+      - interface-e2e
       - static-analysis
       - dependency-audit
       - build
@@ -177,6 +199,7 @@ jobs:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
           INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
           POSTGRES_RESULT: ${{ needs.postgres-integration.result }}
+          E2E_RESULT: ${{ needs.interface-e2e.result }}
           STATIC_RESULT: ${{ needs.static-analysis.result }}
           AUDIT_RESULT: ${{ needs.dependency-audit.result }}
           BUILD_RESULT: ${{ needs.build.result }}
