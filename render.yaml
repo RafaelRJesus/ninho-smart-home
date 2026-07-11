@@ -17,6 +17,8 @@ services:
         generateValue: true
       - key: INTEGRATION_KEY_VERSION
         value: v1
+      - key: TURNSTILE_REQUIRED
+        value: "false"
       - key: TRUST_PROXY
         value: "true"
       - key: REQUIRE_HTTPS

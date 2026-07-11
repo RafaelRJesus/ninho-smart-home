@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 
 const port=3199;const base=`http://127.0.0.1:${port}`;
-const server=spawn(process.execPath,['server/index.js'],{env:{...process.env,NODE_ENV:'production',PORT:String(port),AUTH_SECRET:'smoke-auth-secret-'.padEnd(64,'0'),INTEGRATION_MASTER_KEY:Buffer.alloc(32,9).toString('base64'),REQUIRE_HTTPS:'false',TUYA_ACCESS_ID:'',TUYA_ACCESS_SECRET:'',DATABASE_URL:''},stdio:['ignore','pipe','pipe']});
+const server=spawn(process.execPath,['server/index.js'],{env:{...process.env,NODE_ENV:'production',PORT:String(port),AUTH_SECRET:'smoke-auth-secret-'.padEnd(64,'0'),INTEGRATION_MASTER_KEY:Buffer.alloc(32,9).toString('base64'),REQUIRE_HTTPS:'false',TURNSTILE_REQUIRED:'false',TUYA_ACCESS_ID:'',TUYA_ACCESS_SECRET:'',DATABASE_URL:''},stdio:['ignore','pipe','pipe']});
 let output='';server.stdout.on('data',chunk=>output+=chunk);server.stderr.on('data',chunk=>output+=chunk);
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function request(path){const response=await fetch(`${base}${path}`);return {response,body:await response.text()};}

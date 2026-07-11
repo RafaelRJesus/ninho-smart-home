@@ -7,11 +7,12 @@ const refreshCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_E
 const accessCookie = {httpOnly:true,sameSite:'strict',secure:process.env.NODE_ENV==='production',path:'/',maxAge:15*60*1000};
 const setSession=(res,result)=>{res.cookie('ninho_access',result.accessToken,accessCookie);res.cookie('ninho_refresh',result.refreshToken,refreshCookie);};
 
-export function createV1Router({auth,identity,tokens,providers,vault,credentialStore=identity}) {
+export function createV1Router({auth,identity,tokens,providers,vault,credentialStore=identity,turnstile}) {
   const router=express.Router();const requireAuth=authenticate(tokens);
   router.get('/health',(req,res)=>res.json({status:'ok',timestamp:new Date().toISOString(),correlationId:req.correlationId}));
-  router.post('/auth/register',async(req,res,next)=>{try{const result=await auth.register(req.body);setSession(res,result);res.status(201).json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
-  router.post('/auth/login',async(req,res,next)=>{try{const result=await auth.login(req.body?.email,req.body?.password);setSession(res,result);res.json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
+  router.get('/auth/config',(_req,res)=>res.json(turnstile.publicConfig()));
+  router.post('/auth/register',turnstile.middleware('register'),async(req,res,next)=>{try{const result=await auth.register(req.body);setSession(res,result);res.status(201).json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
+  router.post('/auth/login',turnstile.middleware('login'),async(req,res,next)=>{try{const result=await auth.login(req.body?.email,req.body?.password);setSession(res,result);res.json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
   router.post('/auth/refresh',async(req,res,next)=>{try{const result=await auth.refresh(cookie(req).ninho_refresh);setSession(res,result);res.json({expiresIn:result.expiresIn,user:result.user})}catch(e){next(e)}});
   router.post('/auth/logout',async(req,res)=>{await auth.logout(cookie(req).ninho_refresh);res.clearCookie('ninho_access',{path:'/'});res.clearCookie('ninho_refresh',{path:'/api/v1/auth'});res.status(204).end()});
   router.get('/me',requireAuth,async(req,res)=>res.json(await identity.findUser(req.auth.sub)));
