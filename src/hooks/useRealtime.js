@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-export function useRealtime(onEvent) {
+export function useRealtime(onEvent, url = '/api/events') {
   const [state, setState] = useState('connecting');
   useEffect(() => {
-    const source = new EventSource('/api/events');
+    const source = new EventSource(url);
     source.addEventListener('ready', () => setState('live'));
     source.addEventListener('home-event', message => {
       setState('live');
@@ -11,6 +11,6 @@ export function useRealtime(onEvent) {
     });
     source.onerror = () => setState('reconnecting');
     return () => source.close();
-  }, [onEvent]);
+  }, [onEvent,url]);
   return state;
 }
