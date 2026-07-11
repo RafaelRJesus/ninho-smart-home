@@ -4,8 +4,10 @@ export function authenticate(tokens) {
   return (req,_res,next) => {
     try {
       const [scheme,token] = String(req.get('authorization')||'').split(' ');
-      if (scheme!=='Bearer'||!token) throw new AppError('AUTHENTICATION_REQUIRED','Autenticação obrigatória.',401);
-      req.auth=tokens.verify(token,'access'); next();
+      const cookies=Object.fromEntries(String(req.get('cookie')||'').split(';').map(item=>item.trim().split('=').map(decodeURIComponent)).filter(pair=>pair.length===2));
+      const access=scheme==='Bearer'&&token?token:cookies.ninho_access;
+      if (!access) throw new AppError('AUTHENTICATION_REQUIRED','Autenticação obrigatória.',401);
+      req.auth=tokens.verify(access,'access'); next();
     } catch(error){next(error)}
   };
 }

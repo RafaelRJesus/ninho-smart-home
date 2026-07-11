@@ -50,6 +50,10 @@ CREATE TABLE integrations (
   provider text NOT NULL,
   status text NOT NULL DEFAULT 'disconnected',
   encrypted_credentials bytea,
+  credential_iv bytea,
+  credential_auth_tag bytea,
+  credential_key_version text,
+  credentials_rotated_at timestamptz,
   last_sync_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (home_id, provider)

@@ -21,6 +21,8 @@ import { EventBus } from './core/event-bus.js';
 import { OrchestrationService } from './application/orchestration-service.js';
 import { rateLimit, requireCriticalPin, requireHttps, securityHeaders } from './security/hardening.js';
 import { Metrics, metricsAuthorization } from './core/observability.js';
+import { CredentialVault } from './security/credential-vault.js';
+import { authenticate } from './security/auth-middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const store = new Store();
@@ -30,6 +32,8 @@ if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) throw new
 const identity = new MemoryIdentityStore();
 const tokens = new TokenService(process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex'));
 const auth = new AuthService({ identity, tokens });
+if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
+const vault = new CredentialVault(process.env.INTEGRATION_MASTER_KEY,process.env.INTEGRATION_KEY_VERSION||'v1');
 const providers = new ProviderRegistry();
 const events = new EventBus();
 const orchestration = new OrchestrationService({ store, controlDevice, events });
@@ -82,7 +86,7 @@ export function createApp() {
   app.use(metrics.middleware());
   app.use('/api/v1/auth',rateLimit({windowMs:60000,max:20}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
-  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers }));
+  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:store }));
 
   app.get('/api/health', (_, res) => res.json({ ok: true, uptime: Math.round(process.uptime()), timestamp: new Date().toISOString() }));
   app.get('/api/health/live',(_,res)=>res.json({status:'alive'}));
@@ -90,6 +94,7 @@ export function createApp() {
   app.get('/api/metrics',metricsAuthorization,(_,res)=>res.json(metrics.snapshot()));
   app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', uptime: Math.round(process.uptime()), timestamp: new Date().toISOString(), correlationId: req.correlationId }));
   app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true }));
+  app.use(['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],authenticate(tokens));
   app.get('/api/events', (req, res) => events.stream(req, res));
   app.get('/api/rooms', (_, res) => res.json(store.rooms));
   app.get('/api/scenes', (_, res) => res.json(store.scenes));
