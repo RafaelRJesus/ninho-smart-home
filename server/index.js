@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
 import 'dotenv/config';
 import crypto from 'node:crypto';
@@ -56,7 +55,6 @@ export function createApp(){
   const app=express();
   app.disable('x-powered-by');
   if(process.env.TRUST_PROXY==='true')app.set('trust proxy',1);
-  app.use(cors({origin:process.env.CORS_ORIGIN||true}));
   app.use(express.json({limit:'100kb'}));
   app.use(requestContext);
   app.use(securityHeaders);
