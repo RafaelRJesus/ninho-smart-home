@@ -3,6 +3,9 @@ name: Continuous Integration
 on:
   push:
   pull_request:
+  schedule:
+    # 08:00 em America/Sao_Paulo (UTC-3).
+    - cron: "0 11 * * *"
 
 permissions:
   contents: read
@@ -113,3 +116,34 @@ jobs:
           STRESS_CONNECTIONS: 40
           STRESS_DURATION_SECONDS: 6
           STRESS_MAX_P99_MS: 1500
+
+  daily-report:
+    name: Daily status email
+    if: ${{ always() && github.event_name == 'schedule' }}
+    needs:
+      - unit-tests
+      - integration-tests
+      - static-analysis
+      - dependency-audit
+      - build
+      - smoke-test
+      - load-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send iCloud status report
+        env:
+          SMTP_HOST: smtp.mail.me.com
+          SMTP_PORT: 587
+          SMTP_USERNAME: ${{ secrets.ICLOUD_SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.ICLOUD_APP_PASSWORD }}
+          EMAIL_TO: rafael.sri@icloud.com
+          UNIT_RESULT: ${{ needs.unit-tests.result }}
+          INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
+          STATIC_RESULT: ${{ needs.static-analysis.result }}
+          AUDIT_RESULT: ${{ needs.dependency-audit.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          SMOKE_RESULT: ${{ needs.smoke-test.result }}
+          LOAD_RESULT: ${{ needs.load-test.result }}
+        run: bash scripts/send-ci-report.sh
