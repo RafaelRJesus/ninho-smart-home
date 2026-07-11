@@ -16,7 +16,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 00 | Fundação | **Concluído** | 2026-07-10 |
 | 01 | Identidade e layout | **Concluído** | 2026-07-11 |
 | 02 | Estrutura da casa | **Concluído** | 2026-07-11 |
-| 03 | Integrações | Parcial avançado | 2026-07-10 |
+| 03 | Integrações | **Concluído** | 2026-07-11 |
 | 04 | Dashboard | Parcial | 2026-07-10 |
 | 05 | Planta visual | Parcial | 2026-07-10 |
 | 06 | Dispositivos na planta | Parcial | 2026-07-10 |
@@ -74,8 +74,11 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] Tuya e Home Assistant implementados.
 - [x] Sincronização sem duplicidade, health check, timeout, retry e circuit breaker.
 - [x] Cofre criptografado de credenciais.
-- [ ] Eventos externos persistindo estados no domínio residencial.
-- [ ] Fluxo completo de configuração do Home Assistant na interface.
+- [x] Eventos externos persistindo estados no domínio residencial e publicados por SSE.
+- [x] Fluxo completo de configuração, teste e sincronização de Tuya e Home Assistant na interface.
+- [x] Credenciais do cofre consumidas por provedores isolados por residência.
+- [x] Proteção SSRF, RBAC administrativo, auditoria e `lastSyncAt` implementados.
+- [x] Gate DEV e QA aprovados no PR #6: unitários, integração, PostgreSQL, E2E, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 04 — Dashboard operacional
 
