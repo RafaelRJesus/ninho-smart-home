@@ -52,6 +52,8 @@ O arquivo `render.yaml` publica uma demonstração segura sem credenciais Tuya, 
 
 O sistema inicia em modo demonstração. Como o filesystem do plano gratuito é efêmero, alterações podem ser restauradas após reinicializações ou novos deploys. Não adicione credenciais residenciais reais ao serviço público.
 
+A demonstração exige cadastro/login e protege as APIs residenciais com cookies `HttpOnly`. O painel **Configurações > Cofre de credenciais** demonstra criptografia AES-256-GCM, RBAC, rotação e revogação. Use apenas valores fictícios no Render gratuito; integrações reais exigem persistência privada.
+
 ## Conectar Ekaza / Tuya
 
 1. Entre no [Tuya Developer Platform](https://platform.tuya.com/) e crie um projeto em **Cloud > Development**.
