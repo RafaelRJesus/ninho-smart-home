@@ -14,8 +14,10 @@
     "test:integration": "NODE_ENV=test node --test tests/api.test.js tests/auth.test.js tests/integrations.test.js tests/security-observability.test.js",
     "test:smoke": "node scripts/smoke-production.js",
     "test:stress": "node scripts/stress-test.js",
+    "lint": "eslint .",
+    "security:secrets": "node scripts/scan-secrets.js",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "env:check": "node scripts/validate-production-env.js",
     "release:check": "npm run check && npm run env:check && npm audit --audit-level=high"
   },
@@ -38,6 +40,7 @@
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "eslint": "^9.39.5",
     "supertest": "7.2.2",
     "typescript": "7.0.2"
   }

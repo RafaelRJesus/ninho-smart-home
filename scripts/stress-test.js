@@ -4,7 +4,7 @@ import { performance } from 'node:perf_hooks';
 const port=3198;const base=`http://127.0.0.1:${port}`;const concurrency=Number(process.env.STRESS_CONNECTIONS||40);const durationSeconds=Number(process.env.STRESS_DURATION_SECONDS||6);const maxP99=Number(process.env.STRESS_MAX_P99_MS||1500);
 const server=spawn(process.execPath,['server/index.js'],{env:{...process.env,NODE_ENV:'production',PORT:String(port),AUTH_SECRET:'stress-auth-secret-'.padEnd(64,'0'),INTEGRATION_MASTER_KEY:Buffer.alloc(32,8).toString('base64'),REQUIRE_HTTPS:'false',TURNSTILE_REQUIRED:'false',TUYA_ACCESS_ID:'',TUYA_ACCESS_SECRET:'',DATABASE_URL:'',DATA_FILE:'./data/stress-state.json'},stdio:['ignore','pipe','pipe']});
 let serverOutput='';server.stdout.on('data',chunk=>serverOutput+=chunk);server.stderr.on('data',chunk=>serverOutput+=chunk);
-const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const wait=ms=>new Promise(resolve=>{setTimeout(resolve,ms)});
 const percentile=(values,p)=>values.sort((a,b)=>a-b)[Math.min(values.length-1,Math.ceil(values.length*p)-1)]||0;
 
 async function awaitServer(){for(let attempt=0;attempt<60;attempt++){try{const response=await fetch(`${base}/api/health/live`);if(response.ok)return;}catch{}await wait(250);}throw new Error(`Servidor de stress não iniciou.\n${serverOutput}`);}

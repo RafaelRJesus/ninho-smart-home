@@ -1,6 +1,6 @@
 import { AppError } from '../core/app-error.js';
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const delay = ms => new Promise(resolve => { setTimeout(resolve, ms); });
 
 export class CircuitBreaker {
   constructor({failureThreshold=3,resetTimeoutMs=30000}={}){this.failureThreshold=failureThreshold;this.resetTimeoutMs=resetTimeoutMs;this.failures=0;this.openedAt=0;}
@@ -14,7 +14,7 @@ export async function resilientCall(operation,{timeoutMs=8000,retries=2,baseDela
   breaker.assertAvailable();let lastError;
   for(let attempt=0;attempt<=retries;attempt+=1){
     const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);
-    try{const result=await Promise.race([operation({signal:controller.signal,attempt}),new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(Object.assign(new Error('Timeout'),{name:'AbortError'})),{once:true}))]);clearTimeout(timer);breaker.success();return result}
+    try{const result=await Promise.race([operation({signal:controller.signal,attempt}),new Promise((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(Object.assign(new Error('Timeout'),{name:'AbortError'})),{once:true})})]);clearTimeout(timer);breaker.success();return result}
     catch(error){clearTimeout(timer);lastError=error;if(attempt<retries)await delay(baseDelayMs*2**attempt)}
   }
   breaker.failure();
