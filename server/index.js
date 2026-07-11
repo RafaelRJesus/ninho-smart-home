@@ -26,6 +26,8 @@ import { authenticate } from './security/auth-middleware.js';
 import { connectPostgres } from './infrastructure/postgres.js';
 import { PostgresIdentityStore } from './infrastructure/postgres-identity-store.js';
 import { TurnstileVerifier } from './security/turnstile.js';
+import { MemoryHomeRepository } from './infrastructure/memory-home-repository.js';
+import { PostgresHomeRepository } from './infrastructure/postgres-home-repository.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const store = new Store();
@@ -34,6 +36,7 @@ const tuya = tuyaConfigured ? new TuyaClient({ accessId: process.env.TUYA_ACCESS
 if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) throw new Error('AUTH_SECRET é obrigatório em produção.');
 const databasePool=await connectPostgres();
 const identity = databasePool?new PostgresIdentityStore(databasePool):new MemoryIdentityStore();
+const homeRepository=databasePool?new PostgresHomeRepository(databasePool):new MemoryHomeRepository();
 const tokens = new TokenService(process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex'));
 const auth = new AuthService({ identity, tokens });
 if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
@@ -91,7 +94,7 @@ export function createApp() {
   app.use(metrics.middleware());
   app.use('/api/v1/auth',rateLimit({windowMs:60000,max:20}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
-  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile }));
+  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile, homeRepository, events, controlExternal:async(device,controls)=>{if(tuyaConfigured&&device.externalId)await controlDevice(device.externalId,controls)} }));
 
   app.get('/api/health', (_, res) => res.json({ ok: true, uptime: Math.round(process.uptime()), timestamp: new Date().toISOString() }));
   app.get('/api/health/live',(_,res)=>res.json({status:'alive'}));
