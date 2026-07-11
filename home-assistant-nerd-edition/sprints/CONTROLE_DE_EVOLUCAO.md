@@ -14,7 +14,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | Sprint | Tema | Estado | Última revisão |
 |---|---|---|---|
 | 00 | Fundação | **Concluído** | 2026-07-10 |
-| 01 | Identidade e layout | Em validação | 2026-07-11 |
+| 01 | Identidade e layout | **Concluído** | 2026-07-11 |
 | 02 | Estrutura da casa | Parcial | 2026-07-10 |
 | 03 | Integrações | Parcial avançado | 2026-07-10 |
 | 04 | Dashboard | Parcial | 2026-07-10 |
@@ -52,7 +52,7 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] Shell, menu lateral e responsividade base.
 - [x] Proteção anti-bot na autenticação.
 - [x] Testes automatizados de interface e E2E em desktop e mobile configurados no QA.
-- [ ] Gate QA e aprovação do PR da Sprint 01.
+- [x] Gate QA aprovado no PR #4: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 02 — Estrutura da residência
 
