@@ -93,6 +93,7 @@ export function createApp() {
   app.use(securityHeaders);
   app.use(requireHttps);
   app.use(metrics.middleware());
+  app.use('/api',rateLimit({windowMs:60000,max:Number(process.env.API_RATE_LIMIT_MAX||300)}));
   app.use('/api/v1/auth',rateLimit({windowMs:60000,max:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
   app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile, homeRepository, events, controlExternal:async(device,controls)=>{if(tuyaConfigured&&device.externalId)await controlDevice(device.externalId,controls)} }));
