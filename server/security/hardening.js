@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import expressRateLimit from 'express-rate-limit';
 
 export function securityHeaders(req,res,next){
   res.set({
@@ -16,8 +17,13 @@ export function requireHttps(req,res,next){
 }
 
 export function rateLimit({windowMs=60000,max=60}={}){
-  const clients=new Map();
-  return (req,res,next)=>{const now=Date.now();const key=req.ip||'unknown';let entry=clients.get(key);if(!entry||entry.resetAt<=now){entry={count:0,resetAt:now+windowMs};clients.set(key,entry);}entry.count++;res.set('RateLimit-Limit',String(max));res.set('RateLimit-Remaining',String(Math.max(0,max-entry.count)));if(entry.count>max)return res.status(429).json({code:'RATE_LIMITED',message:'Muitas solicitações. Tente novamente em instantes.',correlationId:req.correlationId});next();};
+  return expressRateLimit({
+    windowMs,
+    limit:max,
+    standardHeaders:'draft-7',
+    legacyHeaders:false,
+    handler:(req,res)=>res.status(429).json({code:'RATE_LIMITED',message:'Muitas solicitações. Tente novamente em instantes.',correlationId:req.correlationId}),
+  });
 }
 
 export function requireCriticalPin(req,res,next){

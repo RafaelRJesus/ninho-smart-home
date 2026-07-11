@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import expressRateLimit from 'express-rate-limit';
 import 'dotenv/config';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -19,7 +20,7 @@ import { TuyaProvider } from './integrations/tuya/tuya-provider.js';
 import { HomeAssistantProvider } from './integrations/home-assistant/home-assistant-provider.js';
 import { EventBus } from './core/event-bus.js';
 import { OrchestrationService } from './application/orchestration-service.js';
-import { rateLimit, requireCriticalPin, requireHttps, securityHeaders } from './security/hardening.js';
+import { requireCriticalPin, requireHttps, securityHeaders } from './security/hardening.js';
 import { Metrics, metricsAuthorization } from './core/observability.js';
 import { CredentialVault } from './security/credential-vault.js';
 import { authenticate } from './security/auth-middleware.js';
@@ -93,9 +94,9 @@ export function createApp() {
   app.use(securityHeaders);
   app.use(requireHttps);
   app.use(metrics.middleware());
-  app.use('/api',rateLimit({windowMs:60000,max:Number(process.env.API_RATE_LIMIT_MAX||300)}));
-  app.use('/api/v1/auth',rateLimit({windowMs:60000,max:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
-  app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
+  app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300)}));
+  app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
+  app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],expressRateLimit({windowMs:60000,limit:120}));
   app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile, homeRepository, events, controlExternal:async(device,controls)=>{if(tuyaConfigured&&device.externalId)await controlDevice(device.externalId,controls)} }));
 
   app.get('/api/health', (_, res) => res.json({ ok: true, uptime: Math.round(process.uptime()), timestamp: new Date().toISOString() }));
@@ -106,7 +107,7 @@ export function createApp() {
   app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true, identityStore: databasePool?'postgresql':'memory' }));
   app.use(
     ['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],
-    rateLimit({windowMs:60000,max:Number(process.env.API_RATE_LIMIT_MAX||300)}),
+    expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300)}),
     authenticate(tokens,identity),
   );
   app.get('/api/events', (req, res) => events.stream(req, res));
