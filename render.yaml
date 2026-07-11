@@ -41,8 +41,6 @@ services:
         sync: false
       - key: SMTP_PASSWORD
         sync: false
-      - key: DATA_FILE
-        value: /tmp/ninho-demo-state.json
       - key: DATABASE_URL
         fromDatabase:
           name: ninho-postgres
