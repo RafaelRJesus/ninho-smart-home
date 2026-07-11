@@ -2,7 +2,9 @@ name: Continuous Integration
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
   schedule:
     # 08:00 em America/Sao_Paulo (UTC-3).
@@ -68,6 +70,7 @@ jobs:
   build:
     name: Production build
     needs: [unit-tests, integration-tests, static-analysis, dependency-audit]
+    environment: ${{ github.event_name == 'pull_request' && 'qa' || 'production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

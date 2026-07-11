@@ -23,3 +23,5 @@ Pacote de especificação técnica para evolução da aplicação de automação
 ## Acompanhamento
 
 O estado consolidado, as evidências e os checkboxes de cada entrega ficam em [`sprints/CONTROLE_DE_EVOLUCAO.md`](sprints/CONTROLE_DE_EVOLUCAO.md). Atualize esse arquivo no mesmo commit de cada evolução.
+
+Todo desenvolvimento segue obrigatoriamente o fluxo documentado em [`../docs/FLUXO_DEV_QA_PRODUCAO.md`](../docs/FLUXO_DEV_QA_PRODUCAO.md): branch nomeada em DEV, promoção por pull request para QA e merge protegido na `main`.
