@@ -139,6 +139,8 @@ A pipeline completa também roda diariamente às 08:00 no horário de São Paulo
 
 As credenciais ficam armazenadas como GitHub Actions Secrets e não são gravadas no repositório nem exibidas no relatório.
 
+Para testar sem esperar o horário agendado, abra **Actions > Continuous Integration > Run workflow**. Execuções comuns de push e pull request não enviam e-mail, evitando notificações excessivas.
+
 O backend renova tokens Tuya, assina chamadas com HMAC-SHA256, descobre as funções suportadas por cada aparelho, valida entradas e mantém as posições da planta após reinicializações.
 
 ## Segurança e observabilidade

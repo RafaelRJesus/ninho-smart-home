@@ -3,6 +3,7 @@ name: Continuous Integration
 on:
   push:
   pull_request:
+  workflow_dispatch:
   schedule:
     # 08:00 em America/Sao_Paulo (UTC-3).
     - cron: "0 11 * * *"
@@ -119,7 +120,7 @@ jobs:
 
   daily-report:
     name: Daily status email
-    if: ${{ always() && github.event_name == 'schedule' }}
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     needs:
       - unit-tests
       - integration-tests
