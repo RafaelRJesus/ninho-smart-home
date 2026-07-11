@@ -14,7 +14,7 @@ const defaultState = {
     { id: 'sala', name: 'Sala' }, { id: 'quarto', name: 'Quarto' },
     { id: 'cozinha', name: 'Cozinha' }, { id: 'banheiro', name: 'Banheiro' }
   ],
-  scenes: [], automations: [], notifications: [], energyReadings: [], energySettings: { tariff: null, currency: 'BRL' }
+  scenes: [], automations: [], notifications: [], energyReadings: [], energySettings: { tariff: null, currency: 'BRL' }, integrationCredentials: []
 };
 
 export class Store {
@@ -42,6 +42,7 @@ export class Store {
   get notifications() { return this.state.notifications; }
   get energyReadings() { return this.state.energyReadings; }
   get energySettings() { return this.state.energySettings; }
+  get integrationCredentials() { return this.state.integrationCredentials; }
   layout(id) { return this.state.layout[id] || {}; }
   updateLayout(id, patch) { this.state.layout[id] = { ...this.layout(id), ...patch }; this.save(); }
   updateDevice(id, patch) { const found = this.devices.find(d => d.id === id); if (found) { Object.assign(found, patch); this.save(); } return found; }
@@ -59,4 +60,9 @@ export class Store {
   readNotification(id) { const found=this.notifications.find(item=>item.id===id);if(found){found.readAt=new Date().toISOString();this.save();}return found?structuredClone(found):null; }
   addEnergyReading(reading) { this.energyReadings.push(reading);this.save();return structuredClone(reading); }
   updateEnergySettings(patch) { this.state.energySettings={...this.energySettings,...patch};this.save();return structuredClone(this.energySettings); }
+  saveIntegrationCredential({homeId,provider,sealed,actorId}) { const id=`${homeId}:${provider}`;const index=this.integrationCredentials.findIndex(item=>item.id===id);const current=this.integrationCredentials[index];const item={id,homeId,provider,sealed,status:'configured',createdAt:current?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:actorId};if(index<0)this.integrationCredentials.push(item);else this.integrationCredentials[index]=item;this.save();return this.publicIntegration(item); }
+  listIntegrations(homeId) { return this.integrationCredentials.filter(item=>item.homeId===homeId).map(item=>this.publicIntegration(item)); }
+  findIntegrationCredential(homeId,provider) { const item=this.integrationCredentials.find(value=>value.id===`${homeId}:${provider}`);return item?structuredClone(item):null; }
+  deleteIntegrationCredential(homeId,provider) { const index=this.integrationCredentials.findIndex(item=>item.id===`${homeId}:${provider}`);if(index<0)return false;this.integrationCredentials.splice(index,1);this.save();return true; }
+  publicIntegration(item) { return {id:item.id,homeId:item.homeId,provider:item.provider,status:item.status,keyVersion:item.sealed.keyVersion,createdAt:item.createdAt,updatedAt:item.updatedAt}; }
 }
