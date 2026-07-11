@@ -10,7 +10,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATA_FILE: /app/data/state.json
     ports:
       - "${NINHO_PORT:-3001}:3001"
     volumes:

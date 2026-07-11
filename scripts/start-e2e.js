@@ -8,7 +8,6 @@ Object.assign(process.env,{
   REQUIRE_HTTPS:'false',
   TURNSTILE_REQUIRED:'false',
   DATABASE_URL:'',
-  DATA_FILE:'./data/e2e-state.json',
   AUTH_RATE_LIMIT_MAX:'200',
 });
 

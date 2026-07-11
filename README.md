@@ -74,7 +74,6 @@ TUYA_ACCESS_SECRET=seu_access_secret
 TUYA_REGION=us
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.4-mini
-DATA_FILE=./data/state.json
 AUTH_SECRET=gere_um_segredo_de_64_caracteres_hexadecimais
 CORS_ORIGIN=http://localhost:5173
 HOME_ASSISTANT_URL=
