@@ -6,7 +6,7 @@ set -euo pipefail
 : "${EMAIL_TO:?Destinatario nao configurado}"
 
 run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-results="${UNIT_RESULT} ${INTEGRATION_RESULT} ${POSTGRES_RESULT:-unknown} ${STATIC_RESULT} ${AUDIT_RESULT} ${BUILD_RESULT} ${SMOKE_RESULT} ${LOAD_RESULT}"
+results="${UNIT_RESULT} ${INTEGRATION_RESULT} ${POSTGRES_RESULT:-unknown} ${E2E_RESULT:-unknown} ${STATIC_RESULT} ${AUDIT_RESULT} ${BUILD_RESULT} ${SMOKE_RESULT} ${LOAD_RESULT}"
 if [[ " ${results} " == *" failure "* || " ${results} " == *" cancelled "* ]]; then
   overall="FALHA"
 else
@@ -32,6 +32,7 @@ Commit: ${GITHUB_SHA}
 Testes unitarios: ${UNIT_RESULT}
 Testes de integracao: ${INTEGRATION_RESULT}
 Integracao PostgreSQL: ${POSTGRES_RESULT:-unknown}
+Interface E2E: ${E2E_RESULT:-unknown}
 Contratos TypeScript: ${STATIC_RESULT}
 Auditoria de dependencias: ${AUDIT_RESULT}
 Build de producao: ${BUILD_RESULT}
