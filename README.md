@@ -130,6 +130,15 @@ O build, o smoke test e o teste de carga só iniciam quando os gates anteriores 
 
 Esses testes executam contra um servidor efêmero e isolado no GitHub Actions; eles não geram tráfego contra produção. Os resultados detectam regressões e validam os mecanismos de proteção, mas não substituem planejamento de capacidade com infraestrutura equivalente à produção.
 
+### Relatório diário por e-mail
+
+A pipeline completa também roda diariamente às 08:00 no horário de São Paulo e envia o resultado para `rafael.sri@icloud.com`, inclusive quando algum job falha. Para ativar o envio, cadastre em **GitHub > Settings > Secrets and variables > Actions**:
+
+- `ICLOUD_SMTP_USERNAME`: o endereço completo da conta iCloud usada como remetente;
+- `ICLOUD_APP_PASSWORD`: uma senha específica de app criada em `account.apple.com`, nunca a senha normal do Apple ID.
+
+As credenciais ficam armazenadas como GitHub Actions Secrets e não são gravadas no repositório nem exibidas no relatório.
+
 O backend renova tokens Tuya, assina chamadas com HMAC-SHA256, descobre as funções suportadas por cada aparelho, valida entradas e mantém as posições da planta após reinicializações.
 
 ## Segurança e observabilidade
