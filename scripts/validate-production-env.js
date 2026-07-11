@@ -8,6 +8,8 @@ if(process.env.CORS_ORIGIN==='*'||process.env.CORS_ORIGIN==='true')errors.push('
 if(process.env.CORS_ORIGIN&&!/^https:\/\//.test(process.env.CORS_ORIGIN))warnings.push('CORS_ORIGIN não usa HTTPS; aceite apenas em homologação local.');
 if(!process.env.METRICS_TOKEN)warnings.push('METRICS_TOKEN vazio deixa métricas sem autenticação.');
 if(!process.env.DATABASE_URL)warnings.push('DATABASE_URL vazia: contas e cofre não terão persistência PostgreSQL.');
+if(process.env.TURNSTILE_REQUIRED!=='true')warnings.push('TURNSTILE_REQUIRED não está ativo; login e cadastro não terão desafio anti-bot.');
+if(process.env.TURNSTILE_REQUIRED==='true'&&(!process.env.TURNSTILE_SITE_KEY||!process.env.TURNSTILE_SECRET_KEY||!process.env.TURNSTILE_HOSTNAME))errors.push('Turnstile ativo exige SITE_KEY, SECRET_KEY e HOSTNAME.');
 if(!process.env.TUYA_ACCESS_ID||!process.env.TUYA_ACCESS_SECRET)warnings.push('Tuya não configurado; o sistema iniciará em demonstração.');
 if(process.env.REQUIRE_HTTPS==='false')warnings.push('REQUIRE_HTTPS=false; use somente atrás de rede local controlada ou durante homologação.');
 

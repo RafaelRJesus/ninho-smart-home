@@ -4,7 +4,7 @@ export function securityHeaders(req,res,next){
   res.set({
     'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'no-referrer',
     'Permissions-Policy':'camera=(), geolocation=(), payment=()',
-    'Content-Security-Policy':"default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; frame-ancestors 'none'"
+    'Content-Security-Policy':"default-src 'self'; connect-src 'self' https://challenges.cloudflare.com ws: wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'"
   });
   if(process.env.NODE_ENV==='production')res.set('Strict-Transport-Security','max-age=31536000; includeSubDomains');
   next();

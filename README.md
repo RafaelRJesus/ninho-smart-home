@@ -131,3 +131,16 @@ O backend renova tokens Tuya, assina chamadas com HMAC-SHA256, descobre as funç
 - Ações críticas podem exigir `CRITICAL_ACTION_PIN_SHA256`.
 - Logs HTTP são JSON estruturado, possuem `correlationId` e não incluem corpos ou credenciais.
 - `/api/health/live` verifica o processo; `/api/health/ready` verifica integrações; `/api/metrics` expõe latência e taxa de erro.
+
+### Proteção anti-bot
+
+Login e cadastro suportam Cloudflare Turnstile com validação obrigatória no backend. Cadastre um widget para `ninho-smart-home.onrender.com` e configure no Render:
+
+```env
+TURNSTILE_SITE_KEY=chave_publica_do_widget
+TURNSTILE_SECRET_KEY=chave_secreta_do_widget
+TURNSTILE_HOSTNAME=ninho-smart-home.onrender.com
+TURNSTILE_REQUIRED=true
+```
+
+A site key é enviada ao navegador; a secret key permanece somente no Render. Tokens expiram, são de uso único e são validados junto com hostname e action. Nunca ative `TURNSTILE_REQUIRED` antes de configurar as três variáveis.

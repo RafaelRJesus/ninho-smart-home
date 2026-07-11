@@ -25,6 +25,7 @@ import { CredentialVault } from './security/credential-vault.js';
 import { authenticate } from './security/auth-middleware.js';
 import { connectPostgres } from './infrastructure/postgres.js';
 import { PostgresIdentityStore } from './infrastructure/postgres-identity-store.js';
+import { TurnstileVerifier } from './security/turnstile.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const store = new Store();
@@ -37,6 +38,7 @@ const tokens = new TokenService(process.env.AUTH_SECRET || crypto.randomBytes(32
 const auth = new AuthService({ identity, tokens });
 if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
 const vault = new CredentialVault(process.env.INTEGRATION_MASTER_KEY,process.env.INTEGRATION_KEY_VERSION||'v1');
+const turnstile = new TurnstileVerifier();
 const providers = new ProviderRegistry();
 const events = new EventBus();
 const orchestration = new OrchestrationService({ store, controlDevice, events });
@@ -89,7 +91,7 @@ export function createApp() {
   app.use(metrics.middleware());
   app.use('/api/v1/auth',rateLimit({windowMs:60000,max:20}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
-  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store }));
+  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile }));
 
   app.get('/api/health', (_, res) => res.json({ ok: true, uptime: Math.round(process.uptime()), timestamp: new Date().toISOString() }));
   app.get('/api/health/live',(_,res)=>res.json({status:'alive'}));
