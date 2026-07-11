@@ -1,0 +1,31 @@
+import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
+
+const user=row=>row&&({id:row.id,email:row.email,displayName:row.display_name,status:row.status});
+const home=row=>row&&({id:row.id,name:row.name,timezone:row.timezone,createdAt:row.created_at});
+const floor=row=>row&&({id:row.id,homeId:row.home_id,name:row.name,position:row.position,createdAt:row.created_at});
+const room=row=>row&&({id:row.id,floorId:row.floor_id,name:row.name,position:row.position,createdAt:row.created_at});
+
+export class PostgresIdentityStore {
+  constructor(pool){this.pool=pool;}
+  async createUser({email,password,displayName}){const normalized=email.trim().toLowerCase();const passwordHash=await bcrypt.hash(password,12);try{const result=await this.pool.query('INSERT INTO users(email,password_hash,display_name) VALUES($1,$2,$3) RETURNING *',[normalized,passwordHash,displayName]);return user(result.rows[0]);}catch(error){if(error.code==='23505')return null;throw error;}}
+  async authenticate(email,password){const result=await this.pool.query("SELECT * FROM users WHERE email=$1 AND status='active'",[String(email).trim().toLowerCase()]);const row=result.rows[0];return row&&await bcrypt.compare(String(password),row.password_hash)?user(row):null;}
+  async findUser(id){return user((await this.pool.query('SELECT * FROM users WHERE id=$1',[id])).rows[0]);}
+  async createHome({name,timezone='America/Sao_Paulo',ownerId}){const client=await this.pool.connect();try{await client.query('BEGIN');const created=home((await client.query('INSERT INTO homes(name,timezone) VALUES($1,$2) RETURNING *',[name,timezone])).rows[0]);await client.query("INSERT INTO home_members(home_id,user_id,role) VALUES($1,$2,'owner')",[created.id,ownerId]);await client.query('COMMIT');return created;}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}}
+  async listHomes(userId){return (await this.pool.query('SELECT h.* FROM homes h JOIN home_members m ON m.home_id=h.id WHERE m.user_id=$1 ORDER BY h.created_at',[userId])).rows.map(home);}
+  async getRole(homeId,userId){return (await this.pool.query('SELECT role FROM home_members WHERE home_id=$1 AND user_id=$2',[homeId,userId])).rows[0]?.role||null;}
+  async createFloor({homeId,name,position}){try{return floor((await this.pool.query('INSERT INTO floors(home_id,name,position) VALUES($1,$2,$3) RETURNING *, now() AS created_at',[homeId,name,position])).rows[0]);}catch(error){if(error.code==='23505')return null;throw error;}}
+  async listFloors(homeId){return (await this.pool.query('SELECT *, now() AS created_at FROM floors WHERE home_id=$1 ORDER BY position',[homeId])).rows.map(floor);}
+  async findFloor(homeId,floorId){return floor((await this.pool.query('SELECT *, now() AS created_at FROM floors WHERE home_id=$1 AND id=$2',[homeId,floorId])).rows[0]);}
+  async createRoom({floorId,name,position}){try{return room((await this.pool.query('INSERT INTO rooms(floor_id,name,position) VALUES($1,$2,$3) RETURNING *, now() AS created_at',[floorId,name,position])).rows[0]);}catch(error){if(error.code==='23505')return null;throw error;}}
+  async listRooms(floorId){return (await this.pool.query('SELECT *, now() AS created_at FROM rooms WHERE floor_id=$1 ORDER BY position',[floorId])).rows.map(room);}
+  async record(event){await this.pool.query('INSERT INTO audit_logs(home_id,actor_id,event_type,target_id,result,metadata,request_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[event.homeId||null,event.actorId||null,event.type,event.targetId||null,event.result,event.metadata||{},event.correlationId||null]);}
+  async listAudit(homeId){return (await this.pool.query('SELECT id,event_type AS type,target_id AS "targetId",result,metadata,created_at AS "createdAt" FROM audit_logs WHERE home_id=$1 ORDER BY created_at DESC',[homeId])).rows;}
+  async revoke(jti){await this.pool.query('INSERT INTO revoked_sessions(jti,expires_at) VALUES($1,now()+interval \'8 days\') ON CONFLICT DO NOTHING',[jti]);}
+  async isRevoked(jti){return Boolean((await this.pool.query('SELECT 1 FROM revoked_sessions WHERE jti=$1 AND expires_at>now()',[jti])).rowCount);}
+  async saveIntegrationCredential({homeId,provider,sealed,actorId}){const result=await this.pool.query(`INSERT INTO integrations(home_id,provider,status,encrypted_credentials,credential_iv,credential_auth_tag,credential_key_version,credentials_rotated_at) VALUES($1,$2,'configured',$3,$4,$5,$6,now()) ON CONFLICT(home_id,provider) DO UPDATE SET status='configured',encrypted_credentials=EXCLUDED.encrypted_credentials,credential_iv=EXCLUDED.credential_iv,credential_auth_tag=EXCLUDED.credential_auth_tag,credential_key_version=EXCLUDED.credential_key_version,credentials_rotated_at=now(),updated_at=now() RETURNING id,home_id,provider,status,credential_key_version,created_at,updated_at`,[homeId,provider,Buffer.from(sealed.ciphertext,'base64'),Buffer.from(sealed.iv,'base64'),Buffer.from(sealed.authTag,'base64'),sealed.keyVersion]);return this.publicIntegration(result.rows[0]);}
+  async listIntegrations(homeId){return (await this.pool.query('SELECT id,home_id,provider,status,credential_key_version,created_at,updated_at FROM integrations WHERE home_id=$1',[homeId])).rows.map(row=>this.publicIntegration(row));}
+  async findIntegrationCredential(homeId,provider){const row=(await this.pool.query('SELECT * FROM integrations WHERE home_id=$1 AND provider=$2',[homeId,provider])).rows[0];if(!row)return null;return {id:row.id,homeId:row.home_id,provider:row.provider,sealed:{ciphertext:row.encrypted_credentials.toString('base64'),iv:row.credential_iv.toString('base64'),authTag:row.credential_auth_tag.toString('base64'),keyVersion:row.credential_key_version}};}
+  async deleteIntegrationCredential(homeId,provider){return Boolean((await this.pool.query('DELETE FROM integrations WHERE home_id=$1 AND provider=$2',[homeId,provider])).rowCount);}
+  publicIntegration(row){return {id:row.id,homeId:row.home_id,provider:row.provider,status:row.status,keyVersion:row.credential_key_version,createdAt:row.created_at,updatedAt:row.updated_at};}
+}
