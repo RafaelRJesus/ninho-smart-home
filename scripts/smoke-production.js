@@ -9,7 +9,7 @@ try{
   let live;for(let attempt=0;attempt<30;attempt++){try{live=await request('/api/health/live');if(live.response.ok)break;}catch{}await wait(250);}
   if(!live?.response.ok)throw new Error(`Servidor não ficou saudável.\n${output}`);
   const ready=await request('/api/health/ready');if(!ready.response.ok)throw new Error(`Readiness falhou: ${ready.body}`);
-  const protectedRoute=await request('/api/devices');if(protectedRoute.response.status!==401)throw new Error(`API protegida respondeu ${protectedRoute.response.status}.`);
+  const protectedRoute=await request('/api/v1/homes');if(protectedRoute.response.status!==401)throw new Error(`API protegida respondeu ${protectedRoute.response.status}.`);
   const page=await request('/');if(!page.response.ok||!page.body.includes('id="root"'))throw new Error('Frontend de produção não foi servido.');
   process.stdout.write('Smoke test aprovado: live, ready, autenticação e frontend.\n');
 }finally{server.kill('SIGTERM');}
