@@ -46,6 +46,12 @@ docker compose ps
 
 O volume `ninho-data` preserva dispositivos, planta, cenas e preferências após recriar o container. Para homologação completa antes de uma release, execute `npm run release:check`.
 
+### Demo gratuita no Render
+
+O arquivo `render.yaml` publica uma demonstração segura sem credenciais Tuya, Home Assistant ou OpenAI. No Render, escolha **New > Blueprint**, conecte este repositório e confirme o plano Free. O `AUTH_SECRET` e o token de métricas são gerados automaticamente.
+
+O sistema inicia em modo demonstração. Como o filesystem do plano gratuito é efêmero, alterações podem ser restauradas após reinicializações ou novos deploys. Não adicione credenciais residenciais reais ao serviço público.
+
 ## Conectar Ekaza / Tuya
 
 1. Entre no [Tuya Developer Platform](https://platform.tuya.com/) e crie um projeto em **Cloud > Development**.
