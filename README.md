@@ -54,6 +54,8 @@ O sistema inicia em modo demonstração. Como o filesystem do plano gratuito é 
 
 A demonstração exige cadastro/login e protege as APIs residenciais com cookies `HttpOnly`. O painel **Configurações > Cofre de credenciais** demonstra criptografia AES-256-GCM, RBAC, rotação e revogação. Use apenas valores fictícios no Render gratuito; integrações reais exigem persistência privada.
 
+O Blueprint provisiona PostgreSQL e conecta o serviço por `DATABASE_URL`. Usuários, residências, permissões, auditoria, sessões revogadas e o cofre cifrado usam o banco automaticamente; no desenvolvimento sem essa variável, o sistema mantém os adaptadores locais.
+
 ## Conectar Ekaza / Tuya
 
 1. Entre no [Tuya Developer Platform](https://platform.tuya.com/) e crie um projeto em **Cloud > Development**.
