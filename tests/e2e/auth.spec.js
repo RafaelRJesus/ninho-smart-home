@@ -46,3 +46,14 @@ test('link inválido exibe redefinição e erro seguro',async({page})=>{
   await page.getByRole('button',{name:'Salvar nova senha'}).click();
   await expect(page.getByRole('alert')).toContainText('Link inválido, expirado ou já utilizado');
 });
+
+test('configurações oferecem fluxos acessíveis para Tuya e Home Assistant',async({page})=>{
+  const suffix=`${Date.now()}-${Math.random()}`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();
+  await page.getByLabel('Seu nome').fill('Integração E2E');await page.getByLabel('E-mail').fill(`integration-${suffix}@ninho.local`);await page.getByLabel('Senha').fill('senha-integracao-e2e');await page.getByRole('button',{name:'Criar conta segura'}).click();
+  await page.getByRole('button',{name:'Configurações'}).click();
+  const tuya=page.getByRole('tab',{name:'Tuya / Ekaza'});const ha=page.getByRole('tab',{name:'Home Assistant'});
+  await expect(tuya).toHaveAttribute('aria-selected','true');await ha.click();await expect(ha).toHaveAttribute('aria-selected','true');
+  await expect(page.getByLabel('URL do Home Assistant')).toBeVisible();await expect(page.getByLabel('Long-Lived Access Token')).toHaveAttribute('type','password');
+  await expect(page.getByRole('button',{name:'Testar'})).toBeDisabled();await expect(page.getByRole('button',{name:'Sincronizar'})).toBeDisabled();
+});
