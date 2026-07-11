@@ -23,13 +23,16 @@ import { rateLimit, requireCriticalPin, requireHttps, securityHeaders } from './
 import { Metrics, metricsAuthorization } from './core/observability.js';
 import { CredentialVault } from './security/credential-vault.js';
 import { authenticate } from './security/auth-middleware.js';
+import { connectPostgres } from './infrastructure/postgres.js';
+import { PostgresIdentityStore } from './infrastructure/postgres-identity-store.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const store = new Store();
 const tuyaConfigured = Boolean(process.env.TUYA_ACCESS_ID && process.env.TUYA_ACCESS_SECRET);
 const tuya = tuyaConfigured ? new TuyaClient({ accessId: process.env.TUYA_ACCESS_ID, accessSecret: process.env.TUYA_ACCESS_SECRET, region: process.env.TUYA_REGION }) : null;
 if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) throw new Error('AUTH_SECRET é obrigatório em produção.');
-const identity = new MemoryIdentityStore();
+const databasePool=await connectPostgres();
+const identity = databasePool?new PostgresIdentityStore(databasePool):new MemoryIdentityStore();
 const tokens = new TokenService(process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex'));
 const auth = new AuthService({ identity, tokens });
 if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
@@ -86,14 +89,14 @@ export function createApp() {
   app.use(metrics.middleware());
   app.use('/api/v1/auth',rateLimit({windowMs:60000,max:20}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
-  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:store }));
+  app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store }));
 
   app.get('/api/health', (_, res) => res.json({ ok: true, uptime: Math.round(process.uptime()), timestamp: new Date().toISOString() }));
   app.get('/api/health/live',(_,res)=>res.json({status:'alive'}));
   app.get('/api/health/ready',async(_,res)=>{const integrations=await providers.health();const degraded=Object.values(integrations).some(item=>item?.status==='unavailable');res.status(degraded?503:200).json({status:degraded?'degraded':'ready',integrations});});
   app.get('/api/metrics',metricsAuthorization,(_,res)=>res.json(metrics.snapshot()));
   app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', uptime: Math.round(process.uptime()), timestamp: new Date().toISOString(), correlationId: req.correlationId }));
-  app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true }));
+  app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true, identityStore: databasePool?'postgresql':'memory' }));
   app.use(['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],authenticate(tokens));
   app.get('/api/events', (req, res) => events.stream(req, res));
   app.get('/api/rooms', (_, res) => res.json(store.rooms));
@@ -198,4 +201,4 @@ export function createApp() {
 }
 
 export const app = createApp();
-if (process.env.NODE_ENV !== 'test') app.listen(process.env.PORT || 3001, () => console.log(`Ninho disponível na porta ${process.env.PORT || 3001}`));
+if (process.env.NODE_ENV !== 'test') {const server=app.listen(process.env.PORT || 3001, () => console.log(`Ninho disponível na porta ${process.env.PORT || 3001}`));const shutdown=()=>server.close(async()=>{await databasePool?.end();process.exit(0)});process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);}

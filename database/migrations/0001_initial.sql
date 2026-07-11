@@ -56,7 +56,14 @@ CREATE TABLE integrations (
   credentials_rotated_at timestamptz,
   last_sync_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (home_id, provider)
+);
+
+CREATE TABLE revoked_sessions (
+  jti uuid PRIMARY KEY,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE devices (
