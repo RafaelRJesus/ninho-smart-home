@@ -93,3 +93,23 @@ jobs:
           name: production-dist
           path: dist
       - run: npm run test:smoke
+
+  load-test:
+    name: Concurrent load test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --omit=dev
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+      - run: npm run test:stress
+        env:
+          STRESS_CONNECTIONS: 40
+          STRESS_DURATION_SECONDS: 6
+          STRESS_MAX_P99_MS: 1500

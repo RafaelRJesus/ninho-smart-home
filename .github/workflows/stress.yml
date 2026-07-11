@@ -1,0 +1,39 @@
+name: Scheduled Stress Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      connections:
+        description: Concurrent connections
+        required: false
+        default: "100"
+      duration:
+        description: Duration per scenario in seconds
+        required: false
+        default: "20"
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-stress-main
+  cancel-in-progress: true
+
+jobs:
+  stress:
+    name: Isolated high-concurrency test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:stress
+        env:
+          STRESS_CONNECTIONS: ${{ inputs.connections || '100' }}
+          STRESS_DURATION_SECONDS: ${{ inputs.duration || '20' }}
+          STRESS_MAX_P99_MS: 2000
