@@ -1,0 +1,33 @@
+import test, {after} from 'node:test';
+import assert from 'node:assert/strict';
+import {connectPostgres} from '../server/infrastructure/postgres.js';
+import {PostgresIdentityStore} from '../server/infrastructure/postgres-identity-store.js';
+import {PostgresHomeRepository} from '../server/infrastructure/postgres-home-repository.js';
+
+const pool=await connectPostgres(process.env.DATABASE_URL);
+const identity=new PostgresIdentityStore(pool);const repository=new PostgresHomeRepository(pool);
+after(async()=>{await pool?.end()});
+
+test('migrations persistem e segregam o domínio residencial no PostgreSQL',{skip:!pool},async()=>{
+  const suffix=Date.now();
+  const owner=await identity.createUser({email:`postgres-${suffix}@ninho.local`,password:'senha-postgres-segura',displayName:'Postgres QA'});
+  const home=await identity.createHome({name:'Casa PostgreSQL',ownerId:owner.id});
+  const other=await identity.createHome({name:'Outra casa PostgreSQL',ownerId:owner.id});
+  const floor=await identity.createFloor({homeId:home.id,name:'Térreo',position:0});
+  const room=await identity.createRoom({floorId:floor.id,name:'Sala',position:0});
+  const created=await repository.saveDevice(home.id,{name:'Luz persistida',type:'light',roomId:room.id,externalId:`qa-${suffix}`,power:true,brightness:70,x:20,y:30});
+  assert.equal(created.room,'Sala');assert.equal(created.power,true);
+  assert.equal((await repository.listDevices(home.id)).length,1);
+  assert.equal((await repository.listDevices(other.id)).length,0);
+  const scene=await repository.saveScene(home.id,{name:'Cena PostgreSQL',actions:[{deviceId:created.id,controls:{power:false}}]});
+  await repository.saveAutomation(home.id,{name:'Automação PostgreSQL',sceneId:scene.id,trigger:{type:'manual'},conditions:[],enabled:true});
+  await repository.addNotification(home.id,{severity:'info',title:'QA',message:'Persistência validada'});
+  await repository.addEnergyReading(home.id,{deviceId:created.id,roomId:room.id,kwh:1.25});
+  await repository.updateEnergySettings(home.id,{tariff:1.1,currency:'BRL'});
+  await repository.saveFloorplan(home.id,{zoom:1.2,pan:{x:10,y:5}});
+  assert.equal((await repository.listScenes(home.id)).length,1);
+  assert.equal((await repository.listAutomations(home.id)).length,1);
+  assert.equal((await repository.listNotifications(home.id)).length,1);
+  assert.equal((await repository.getEnergy(home.id)).readings.length,1);
+  assert.equal((await repository.getFloorplan(home.id)).version,1);
+});
