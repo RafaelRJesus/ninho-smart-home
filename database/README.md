@@ -19,4 +19,4 @@ DATABASE_SSL=true
 DATABASE_POOL_SIZE=5
 ```
 
-Dispositivos demonstrativos, cenas e preferências visuais ainda utilizam o estado local. Faça backup antes de migrations e valide restauração em homologação.
+A migração `0002_home_domain.sql` persiste dispositivos, estados, planta, cenas, automações, notificações e energia por residência. O `Store` em arquivo permanece somente durante a janela de compatibilidade das rotas legadas e não é fonte de verdade para a API v1.
