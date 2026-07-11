@@ -2,11 +2,16 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
 export class MemoryIdentityStore {
-  constructor() { this.users=new Map();this.homes=new Map();this.members=[];this.floors=new Map();this.rooms=new Map();this.integrations=new Map();this.audit=[];this.revokedSessions=new Set(); }
-  async createUser({email,password,displayName}) { const normalized=email.trim().toLowerCase();if([...this.users.values()].some(u=>u.email===normalized))return null;const user={id:crypto.randomUUID(),email:normalized,passwordHash:await bcrypt.hash(password,12),displayName,status:'active',createdAt:new Date().toISOString()};this.users.set(user.id,user);return this.publicUser(user); }
-  publicUser(user){return {id:user.id,email:user.email,displayName:user.displayName,status:user.status};}
+  constructor() { this.users=new Map();this.homes=new Map();this.members=[];this.floors=new Map();this.rooms=new Map();this.integrations=new Map();this.audit=[];this.revokedSessions=new Set();this.passwordResets=new Map(); }
+  async createUser({email,password,displayName}) { const normalized=email.trim().toLowerCase();if([...this.users.values()].some(u=>u.email===normalized))return null;const user={id:crypto.randomUUID(),email:normalized,passwordHash:await bcrypt.hash(password,12),displayName,status:'active',sessionVersion:0,createdAt:new Date().toISOString()};this.users.set(user.id,user);return this.publicUser(user); }
+  publicUser(user){return {id:user.id,email:user.email,displayName:user.displayName,status:user.status,sessionVersion:user.sessionVersion||0};}
   async authenticate(email,password){const user=[...this.users.values()].find(item=>item.email===String(email).trim().toLowerCase());if(!user||user.status!=='active'||!await bcrypt.compare(String(password),user.passwordHash))return null;return this.publicUser(user);}
   async findUser(id){const user=this.users.get(id);return user?this.publicUser(user):null;}
+  async findUserByEmail(email){const user=[...this.users.values()].find(item=>item.email===String(email).trim().toLowerCase());return user?this.publicUser(user):null;}
+  async savePasswordReset({userId,tokenHash,expiresAt}){for(const [hash,item] of this.passwordResets)if(item.userId===userId)this.passwordResets.delete(hash);this.passwordResets.set(tokenHash,{userId,expiresAt,usedAt:null});}
+  async consumePasswordReset(tokenHash){const item=this.passwordResets.get(tokenHash);if(!item||item.usedAt||new Date(item.expiresAt)<=new Date())return null;item.usedAt=new Date().toISOString();return item.userId;}
+  async updatePassword(userId,password){const user=this.users.get(userId);if(!user)return false;user.passwordHash=await bcrypt.hash(password,12);user.sessionVersion=(user.sessionVersion||0)+1;return true;}
+  async getSessionVersion(userId){return this.users.get(userId)?.sessionVersion??null;}
   async createHome({name,timezone='America/Sao_Paulo',ownerId}){const home={id:crypto.randomUUID(),name,timezone,createdAt:new Date().toISOString()};this.homes.set(home.id,home);this.members.push({homeId:home.id,userId:ownerId,role:'owner'});return structuredClone(home);}
   async listHomes(userId){const ids=this.members.filter(m=>m.userId===userId).map(m=>m.homeId);return ids.map(id=>structuredClone(this.homes.get(id))).filter(Boolean);}
   async getRole(homeId,userId){return this.members.find(m=>m.homeId===homeId&&m.userId===userId)?.role||null;}

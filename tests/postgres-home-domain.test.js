@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {connectPostgres} from '../server/infrastructure/postgres.js';
 import {PostgresIdentityStore} from '../server/infrastructure/postgres-identity-store.js';
 import {PostgresHomeRepository} from '../server/infrastructure/postgres-home-repository.js';
+import {TokenService} from '../server/security/token-service.js';
+import {AuthService} from '../server/application/auth-service.js';
 
 const pool=await connectPostgres(process.env.DATABASE_URL);
 const identity=new PostgresIdentityStore(pool);const repository=new PostgresHomeRepository(pool);
@@ -11,6 +13,7 @@ after(async()=>{await pool?.end()});
 test('migrations persistem e segregam o domínio residencial no PostgreSQL',{skip:!pool},async()=>{
   const suffix=Date.now();
   const owner=await identity.createUser({email:`postgres-${suffix}@ninho.local`,password:'senha-postgres-segura',displayName:'Postgres QA'});
+  let resetUrl;const auth=new AuthService({identity,tokens:new TokenService('q'.repeat(64)),emailSender:{sendPasswordReset:async message=>{resetUrl=message.url;return true}},appUrl:'https://qa.ninho.local'});await auth.requestPasswordReset(owner.email);await auth.resetPassword(new URL(resetUrl).searchParams.get('reset'),'senha-postgres-alterada');assert.ok(await identity.authenticate(owner.email,'senha-postgres-alterada'));
   const home=await identity.createHome({name:'Casa PostgreSQL',ownerId:owner.id});
   const other=await identity.createHome({name:'Outra casa PostgreSQL',ownerId:owner.id});
   const floor=await identity.createFloor({homeId:home.id,name:'Térreo',position:0});

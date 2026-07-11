@@ -28,6 +28,7 @@ import { PostgresIdentityStore } from './infrastructure/postgres-identity-store.
 import { TurnstileVerifier } from './security/turnstile.js';
 import { MemoryHomeRepository } from './infrastructure/memory-home-repository.js';
 import { PostgresHomeRepository } from './infrastructure/postgres-home-repository.js';
+import { EmailSender } from './infrastructure/email-sender.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const store = new Store();
@@ -38,7 +39,7 @@ const databasePool=await connectPostgres();
 const identity = databasePool?new PostgresIdentityStore(databasePool):new MemoryIdentityStore();
 const homeRepository=databasePool?new PostgresHomeRepository(databasePool):new MemoryHomeRepository();
 const tokens = new TokenService(process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex'));
-const auth = new AuthService({ identity, tokens });
+const auth = new AuthService({ identity, tokens, emailSender:new EmailSender() });
 if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
 const vault = new CredentialVault(process.env.INTEGRATION_MASTER_KEY,process.env.INTEGRATION_KEY_VERSION||'v1');
 const turnstile = new TurnstileVerifier();
@@ -92,7 +93,7 @@ export function createApp() {
   app.use(securityHeaders);
   app.use(requireHttps);
   app.use(metrics.middleware());
-  app.use('/api/v1/auth',rateLimit({windowMs:60000,max:20}));
+  app.use('/api/v1/auth',rateLimit({windowMs:60000,max:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
   app.use(['/api/assistant','/api/devices','/api/scenes','/api/automations'],rateLimit({windowMs:60000,max:120}));
   app.use('/api/v1', createV1Router({ auth, identity, tokens, providers, vault, credentialStore:databasePool?identity:store, turnstile, homeRepository, events, controlExternal:async(device,controls)=>{if(tuyaConfigured&&device.externalId)await controlDevice(device.externalId,controls)} }));
 
@@ -102,7 +103,7 @@ export function createApp() {
   app.get('/api/metrics',metricsAuthorization,(_,res)=>res.json(metrics.snapshot()));
   app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', uptime: Math.round(process.uptime()), timestamp: new Date().toISOString(), correlationId: req.correlationId }));
   app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true, identityStore: databasePool?'postgresql':'memory' }));
-  app.use(['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],authenticate(tokens));
+  app.use(['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],authenticate(tokens,identity));
   app.get('/api/events', (req, res) => events.stream(req, res));
   app.get('/api/rooms', (_, res) => res.json(store.rooms));
   app.get('/api/scenes', (_, res) => res.json(store.scenes));
