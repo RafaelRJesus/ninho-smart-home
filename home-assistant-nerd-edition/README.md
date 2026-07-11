@@ -19,3 +19,7 @@ Pacote de especificação técnica para evolução da aplicação de automação
 4. Ações críticas sempre confirmadas e auditadas.
 5. Evolução incremental por sprint.
 6. Segurança e observabilidade desde o início.
+
+## Acompanhamento
+
+O estado consolidado, as evidências e os checkboxes de cada entrega ficam em [`sprints/CONTROLE_DE_EVOLUCAO.md`](sprints/CONTROLE_DE_EVOLUCAO.md). Atualize esse arquivo no mesmo commit de cada evolução.
