@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: ninho-smart-home
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: METRICS_TOKEN
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "true"
+      - key: REQUIRE_HTTPS
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://ninho-smart-home.onrender.com
+      - key: DATA_FILE
+        value: /tmp/ninho-demo-state.json
