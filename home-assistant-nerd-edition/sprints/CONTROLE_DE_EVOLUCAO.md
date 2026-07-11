@@ -15,7 +15,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 |---|---|---|---|
 | 00 | Fundação | **Concluído** | 2026-07-10 |
 | 01 | Identidade e layout | **Concluído** | 2026-07-11 |
-| 02 | Estrutura da casa | Parcial | 2026-07-10 |
+| 02 | Estrutura da casa | **Concluído** | 2026-07-11 |
 | 03 | Integrações | Parcial avançado | 2026-07-10 |
 | 04 | Dashboard | Parcial | 2026-07-10 |
 | 05 | Planta visual | Parcial | 2026-07-10 |
@@ -58,12 +58,15 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Criação e listagem de residências, pisos e cômodos no PostgreSQL.
 - [x] Segregação e auditoria por residência.
-- [ ] Atualização e exclusão versionadas de residência, pisos e cômodos.
+- [x] Atualização e exclusão versionadas de residência, pisos e cômodos.
 - [x] Persistência PostgreSQL de dispositivos, estados, planta, cenas, automações, notificações e energia.
 - [x] Repositórios equivalentes para PostgreSQL e testes em memória.
 - [x] Frontend consumindo a API residencial versionada para o domínio da casa.
 - [x] Testes de segregação entre residências e integração PostgreSQL em QA.
-- [ ] Remoção definitiva das rotas e do `Store` legados após a janela de compatibilidade.
+- [x] Remoção definitiva das rotas e do `Store` legados após a janela de compatibilidade.
+- [x] Identificador externo único por residência, associação dispositivo-cômodo e status online/offline persistidos.
+- [x] RBAC administrativo, auditoria e conflitos de versão cobertos por testes positivos e negativos.
+- [x] Gate DEV e QA aprovados no PR #5: unitários, integração, PostgreSQL, E2E, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 03 — Home Assistant e Tuya
 
