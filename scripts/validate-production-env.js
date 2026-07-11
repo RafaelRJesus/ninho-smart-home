@@ -7,6 +7,7 @@ if(process.env.AUTH_SECRET&&process.env.AUTH_SECRET.length<64)errors.push('AUTH_
 if(process.env.CORS_ORIGIN==='*'||process.env.CORS_ORIGIN==='true')errors.push('CORS_ORIGIN deve informar a origem HTTPS exata.');
 if(process.env.CORS_ORIGIN&&!/^https:\/\//.test(process.env.CORS_ORIGIN))warnings.push('CORS_ORIGIN não usa HTTPS; aceite apenas em homologação local.');
 if(!process.env.METRICS_TOKEN)warnings.push('METRICS_TOKEN vazio deixa métricas sem autenticação.');
+if(!process.env.DATABASE_URL)warnings.push('DATABASE_URL vazia: contas e cofre não terão persistência PostgreSQL.');
 if(!process.env.TUYA_ACCESS_ID||!process.env.TUYA_ACCESS_SECRET)warnings.push('Tuya não configurado; o sistema iniciará em demonstração.');
 if(process.env.REQUIRE_HTTPS==='false')warnings.push('REQUIRE_HTTPS=false; use somente atrás de rede local controlada ou durante homologação.');
 
