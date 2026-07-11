@@ -18,7 +18,13 @@ services:
       - key: INTEGRATION_KEY_VERSION
         value: v1
       - key: TURNSTILE_REQUIRED
-        value: "false"
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: TURNSTILE_HOSTNAME
+        sync: false
       - key: TRUST_PROXY
         value: "true"
       - key: REQUIRE_HTTPS
