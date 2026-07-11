@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.1.0
+  version: 1.2.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -35,6 +35,54 @@ paths:
       security: [{ cookieAuth: [] }]
       responses:
         '201': { description: Residência criada com piso e ambientes iniciais }
+  /homes/{homeId}:
+    patch:
+      operationId: updateHome
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Residência atualizada e versão incrementada }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+    delete:
+      operationId: deleteHome
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/VersionQuery' }
+      responses:
+        '204': { description: Residência excluída }
+        '409': { description: Versão desatualizada ou última residência do proprietário }
+  /homes/{homeId}/floors:
+    get:
+      operationId: listFloors
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses: { '200': { description: Pisos da residência } }
+    post:
+      operationId: createFloor
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses: { '201': { description: Piso criado } }
+  /homes/{homeId}/floors/{floorId}:
+    patch:
+      operationId: updateFloor
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/FloorId' }
+      responses:
+        '200': { description: Piso atualizado e versão incrementada }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+    delete:
+      operationId: deleteFloor
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { $ref: '#/components/parameters/FloorId' }
+        - { $ref: '#/components/parameters/VersionQuery' }
+      responses:
+        '204': { description: Piso excluído }
+        '409': { description: Piso ocupado, último piso ou versão desatualizada }
   /homes/{homeId}/rooms:
     get:
       operationId: listRooms
@@ -73,6 +121,17 @@ paths:
       responses:
         '200': { description: Dispositivo atualizado }
         '404': { description: Dispositivo não encontrado na residência }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+    delete:
+      operationId: deleteDevice
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { name: deviceId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/VersionQuery' }
+      responses:
+        '204': { description: Dispositivo excluído }
+        '409': { $ref: '#/components/responses/VersionConflict' }
   /homes/{homeId}/floorplan:
     get:
       operationId: getFloorplan
@@ -152,8 +211,20 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    FloorId:
+      name: floorId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    VersionQuery:
+      name: version
+      in: query
+      required: true
+      schema: { type: integer, minimum: 1 }
   responses:
     Unauthorized:
       description: Sessão ausente ou inválida
     Forbidden:
       description: Usuário sem acesso à residência
+    VersionConflict:
+      description: A versão enviada está desatualizada; recarregue o recurso antes de tentar novamente
