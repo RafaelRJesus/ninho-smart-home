@@ -104,7 +104,11 @@ export function createApp() {
   app.get('/api/metrics',metricsAuthorization,(_,res)=>res.json(metrics.snapshot()));
   app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', uptime: Math.round(process.uptime()), timestamp: new Date().toISOString(), correlationId: req.correlationId }));
   app.get('/api/status', (_, res) => res.json({ mode: tuyaConfigured ? 'tuya' : 'demo', ai: Boolean(process.env.OPENAI_API_KEY), persistence: true, identityStore: databasePool?'postgresql':'memory' }));
-  app.use(['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],authenticate(tokens,identity));
+  app.use(
+    ['/api/events','/api/rooms','/api/devices','/api/scenes','/api/automations','/api/notifications','/api/energy','/api/tuya','/api/assistant'],
+    rateLimit({windowMs:60000,max:Number(process.env.API_RATE_LIMIT_MAX||300)}),
+    authenticate(tokens,identity),
+  );
   app.get('/api/events', (req, res) => events.stream(req, res));
   app.get('/api/rooms', (_, res) => res.json(store.rooms));
   app.get('/api/scenes', (_, res) => res.json(store.scenes));
