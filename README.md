@@ -1,5 +1,7 @@
 # Ninho — assistente residencial Tuya
 
+[![Continuous Integration](https://github.com/RafaelRJesus/ninho-smart-home/actions/workflows/ci.yml/badge.svg)](https://github.com/RafaelRJesus/ninho-smart-home/actions/workflows/ci.yml)
+
 Aplicação web operacional para controlar produtos Tuya/Ekaza por clique, texto e voz. Inclui dashboard React, planta interativa, backend Express, persistência local, interpretação de comandos e integração opcional com OpenAI.
 
 ## Requisitos
@@ -107,6 +109,19 @@ npm test       # testes de API, comandos e Tuya
 npm run build  # compila o frontend
 npm run check  # executa toda a validação
 ```
+
+## Pipeline de qualidade
+
+Cada push e pull request executa jobs independentes no GitHub Actions:
+
+- testes unitários de domínio, comandos, cofre, planta e Tuya;
+- suítes de API, autenticação, integrações e segurança;
+- contratos TypeScript;
+- auditoria de dependências em severidade alta;
+- build de produção com artifact por sete dias;
+- smoke test de health, readiness, autenticação e frontend compilado.
+
+O build e o smoke test só iniciam quando todos os gates anteriores são aprovados. Execuções antigas da mesma branch são canceladas automaticamente.
 
 O backend renova tokens Tuya, assina chamadas com HMAC-SHA256, descobre as funções suportadas por cada aparelho, valida entradas e mantém as posições da planta após reinicializações.
 
