@@ -31,6 +31,16 @@ services:
         value: "true"
       - key: CORS_ORIGIN
         value: https://ninho-smart-home.onrender.com
+      - key: APP_URL
+        value: https://ninho-smart-home.onrender.com
+      - key: SMTP_HOST
+        value: smtp.mail.me.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
       - key: DATA_FILE
         value: /tmp/ninho-demo-state.json
       - key: DATABASE_URL
