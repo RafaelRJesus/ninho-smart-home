@@ -162,3 +162,18 @@ TURNSTILE_REQUIRED=true
 ```
 
 A site key é enviada ao navegador; a secret key permanece somente no Render. Tokens expiram, são de uso único e são validados junto com hostname e action. Nunca ative `TURNSTILE_REQUIRED` antes de configurar as três variáveis.
+
+### Recuperação de senha
+
+O Ninho envia um link de uso único, válido por 30 minutos. O banco guarda somente o SHA-256 do token e a troca invalida sessões anteriores. Configure no Render:
+
+```env
+APP_URL=https://ninho-smart-home.onrender.com
+SMTP_HOST=smtp.mail.me.com
+SMTP_PORT=587
+SMTP_USERNAME=seu_email_icloud
+SMTP_PASSWORD=senha_especifica_de_app
+SMTP_FROM=seu_email_icloud
+```
+
+Use uma senha específica de app da Apple. A resposta da API é sempre igual para endereços existentes e inexistentes, impedindo enumeração de contas.

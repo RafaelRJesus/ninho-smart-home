@@ -12,6 +12,18 @@ paths:
       responses:
         '200': { description: Sessão criada }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/password/forgot:
+    post:
+      operationId: requestPasswordReset
+      description: Sempre responde de forma genérica para impedir enumeração de contas.
+      responses:
+        '202': { description: Solicitação recebida }
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      responses:
+        '204': { description: Senha alterada e sessões anteriores invalidadas }
+        '400': { description: Token inválido, expirado, usado ou senha fora da política }
   /homes:
     get:
       operationId: listHomes
