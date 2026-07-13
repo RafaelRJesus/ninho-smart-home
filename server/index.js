@@ -4,7 +4,7 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TuyaClient, commandFor } from './tuya-client.js';
+import { TuyaClient } from './tuya-client.js';
 import { errorHandler, notFoundHandler, requestContext } from './core/http.js';
 import { TokenService } from './security/token-service.js';
 import { MemoryIdentityStore } from './infrastructure/memory-identity-store.js';
@@ -47,14 +47,6 @@ const dashboard=new DashboardService({identity,repository:homeRepository,version
 if(tuya)providers.register('tuya',withResilience(new TuyaProvider({client:tuya}),{timeoutMs:8000,retries:2}));
 if(process.env.HOME_ASSISTANT_URL&&process.env.HOME_ASSISTANT_TOKEN)providers.register('home-assistant',withResilience(new HomeAssistantProvider({baseUrl:process.env.HOME_ASSISTANT_URL,token:process.env.HOME_ASSISTANT_TOKEN}),{timeoutMs:5000,retries:2}));
 
-async function controlDevice(id,controls){
-  if(!tuyaConfigured)return;
-  const functionsResult=await tuya.getFunctions(id);
-  const functions=functionsResult?.functions||functionsResult||[];
-  const commands=Object.entries(controls).filter(([key])=>['power','brightness','temperature'].includes(key)).map(([key,value])=>commandFor(functions,key,value));
-  if(commands.length)await tuya.sendCommands(id,commands);
-}
-
 export function createApp(){
   const app=express();
   app.disable('x-powered-by');
@@ -66,7 +58,7 @@ export function createApp(){
   app.use(metrics.middleware());
   app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300),skip:req=>req.path.startsWith('/health')}));
   app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
-  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):controlDevice(device.externalId,controls)}));
+  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
   app.get('/api/health',(_req,res)=>res.json({ok:true,uptime:Math.round(process.uptime()),timestamp:new Date().toISOString()}));
   app.get('/api/health/live',(_req,res)=>res.json({status:'alive'}));
   app.get('/api/health/ready',async(_req,res)=>{const integrations=await providers.health();const degraded=Object.values(integrations).some(item=>item?.status==='unavailable');res.status(degraded?503:200).json({status:degraded?'degraded':'ready',integrations});});
