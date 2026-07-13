@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.3.0
+  version: 1.4.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -132,6 +132,15 @@ paths:
       responses:
         '204': { description: Dispositivo excluído }
         '409': { $ref: '#/components/responses/VersionConflict' }
+  /homes/{homeId}/dashboard:
+    get:
+      operationId: getOperationalDashboard
+      description: Agrega somente dados autorizados da residência para segurança, conectividade, dispositivos, câmeras, clima, energia, automações, atividade e sistema.
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Snapshot operacional gerado pelo backend }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /homes/{homeId}/floorplan:
     get:
       operationId: getFloorplan

@@ -25,6 +25,7 @@ import { MemoryHomeRepository } from './infrastructure/memory-home-repository.js
 import { PostgresHomeRepository } from './infrastructure/postgres-home-repository.js';
 import { EmailSender } from './infrastructure/email-sender.js';
 import { HomeIntegrationService } from './application/home-integration-service.js';
+import { DashboardService } from './application/dashboard-service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tuyaConfigured = Boolean(process.env.TUYA_ACCESS_ID && process.env.TUYA_ACCESS_SECRET);
@@ -42,6 +43,7 @@ const providers=new ProviderRegistry();
 const events=new EventBus();
 const metrics=new Metrics();
 const integrations=new HomeIntegrationService({identity,repository:homeRepository,vault,events});
+const dashboard=new DashboardService({identity,repository:homeRepository,version:process.env.npm_package_version||'0.1.0'});
 if(tuya)providers.register('tuya',withResilience(new TuyaProvider({client:tuya}),{timeoutMs:8000,retries:2}));
 if(process.env.HOME_ASSISTANT_URL&&process.env.HOME_ASSISTANT_TOKEN)providers.register('home-assistant',withResilience(new HomeAssistantProvider({baseUrl:process.env.HOME_ASSISTANT_URL,token:process.env.HOME_ASSISTANT_TOKEN}),{timeoutMs:5000,retries:2}));
 
@@ -64,7 +66,7 @@ export function createApp(){
   app.use(metrics.middleware());
   app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300),skip:req=>req.path.startsWith('/health')}));
   app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
-  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):controlDevice(device.externalId,controls)}));
+  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):controlDevice(device.externalId,controls)}));
   app.get('/api/health',(_req,res)=>res.json({ok:true,uptime:Math.round(process.uptime()),timestamp:new Date().toISOString()}));
   app.get('/api/health/live',(_req,res)=>res.json({status:'alive'}));
   app.get('/api/health/ready',async(_req,res)=>{const integrations=await providers.health();const degraded=Object.values(integrations).some(item=>item?.status==='unavailable');res.status(degraded?503:200).json({status:degraded?'degraded':'ready',integrations});});
