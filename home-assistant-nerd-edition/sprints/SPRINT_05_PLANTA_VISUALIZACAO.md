@@ -55,9 +55,17 @@ Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de val
 
 ## Definition of Done
 
-- Código revisado.
-- Pipeline aprovado.
-- Critérios de aceite atendidos.
-- Documentação atualizada.
-- Deploy em QA concluído.
-- Aprovação de QA registrada.
+- [x] Código revisado.
+- [x] Pipeline aprovado.
+- [x] Critérios de aceite atendidos.
+- [x] Documentação atualizada.
+- [x] Deploy em QA concluído.
+- [x] Aprovação de QA registrada.
+
+## Evidências
+
+- API e segurança do upload: `server/domain/floorplan.js`, `server/routes/home-domain.js` e `tests/home-domain-api.test.js`.
+- Visualização por piso, upload, tela cheia e gestos: `src/components/FloorplanEditor.jsx`, `src/domain/floorplan.js` e `src/styles.css`.
+- Testes unitários e de interface: `tests/floorplan.test.js` e `tests/e2e/auth.spec.js`.
+- Contrato público atualizado: `docs/openapi.yaml` versão 1.5.0.
+- Gate DEV aprovado no GitHub Actions e gate QA completo aprovado no PR #8 em 2026-07-13.
