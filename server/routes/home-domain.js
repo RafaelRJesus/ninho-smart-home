@@ -8,12 +8,13 @@ import { authorizeHome } from '../security/auth-middleware.js';
 const invalid=(message)=>new AppError('VALIDATION_ERROR',message,400);
 const notFound=(entity)=>new AppError('NOT_FOUND',`${entity} não encontrado.`,404);
 
-export function createHomeDomainRouter({identity,repository,events,controlExternal}){
+export function createHomeDomainRouter({identity,repository,events,controlExternal,dashboard}){
   const router=express.Router({mergeParams:true});
   const requireManager=authorizeHome(identity,['owner','admin']);
   const version=value=>{const parsed=Number(value);if(!Number.isInteger(parsed)||parsed<1)throw invalid('Versão atual do recurso é obrigatória.');return parsed;};
   const audit=(req,type,targetId,metadata={})=>identity.record({type,homeId:req.params.homeId,actorId:req.auth.sub,targetId,result:'succeeded',correlationId:req.correlationId,metadata});
   router.get('/status',async(req,res)=>{const configured=await identity.listIntegrations(req.params.homeId);res.json({mode:configured.length?'integrated':'demo',providers:configured.map(item=>({provider:item.provider,status:item.status,lastSyncAt:item.lastSyncAt})),ai:Boolean(process.env.OPENAI_API_KEY),persistence:repository.constructor.name.includes('Postgres')?'postgresql':'memory'});});
+  router.get('/dashboard',async(req,res,next)=>{try{res.json(await dashboard.get(req.params.homeId));}catch(error){next(error)}});
   router.get('/events',(req,res)=>events.stream(req,res,event=>event.payload?.homeId===req.params.homeId));
   router.get('/rooms',async(req,res)=>res.json(await identity.listHomeRooms(req.params.homeId)));
   router.post('/rooms',requireManager,async(req,res,next)=>{try{const name=String(req.body?.name||'').trim();if(!name||name.length>40)throw invalid('Informe um nome de até 40 caracteres.');let floors=await identity.listFloors(req.params.homeId);if(!floors.length)floors=[await identity.createFloor({homeId:req.params.homeId,name:'Térreo',position:0})];const floor=floors.find(item=>item.id===(req.body?.floorId||floors[0].id));if(!floor)throw invalid('Piso inválido.');const room=await identity.createRoom({floorId:floor.id,name,position:(await identity.listRooms(floor.id)).length});if(!room)throw new AppError('ROOM_ALREADY_EXISTS','Esse cômodo já existe neste piso.',409);await audit(req,'ROOM_CREATED',room.id,{floorId:floor.id});res.status(201).json(room);}catch(error){next(error)}});
