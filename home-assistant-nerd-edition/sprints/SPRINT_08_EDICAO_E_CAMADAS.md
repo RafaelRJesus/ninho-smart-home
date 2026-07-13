@@ -55,9 +55,16 @@ Permitir que administradores ajustem a representação visual da residência com
 
 ## Definition of Done
 
-- [ ] Código revisado.
-- [ ] Pipeline aprovado.
-- [ ] Critérios de aceite atendidos.
-- [ ] Documentação atualizada.
-- [ ] Deploy em QA concluído.
-- [ ] Aprovação de QA registrada.
+- [x] Código revisado.
+- [x] Pipeline aprovado.
+- [x] Critérios de aceite atendidos.
+- [x] Documentação atualizada.
+- [x] Deploy em QA concluído.
+- [x] Aprovação de QA registrada.
+
+## Evidências
+
+- Gate DEV aprovado na branch `feat/sprint-08-floorplan-editing-layers`, run `29276126416`.
+- Gate QA aprovado no PR #11: unitários, API/integração, PostgreSQL, E2E desktop/mobile, lint, tipos, build, smoke, carga concorrente, dependências, segredos e CodeQL.
+- Contrato versionado em `docs/openapi.yaml` 1.8.0 e migração `database/migrations/0005_floorplan_versions.sql` validada em PostgreSQL.
+- Cenários positivos, negativos e alternativos automatizados em `tests/floorplan.test.js`, `tests/home-domain-api.test.js`, `tests/postgres-home-domain.test.js` e `tests/e2e/auth.spec.js`.
