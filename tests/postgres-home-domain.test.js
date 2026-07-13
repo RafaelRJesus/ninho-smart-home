@@ -34,10 +34,13 @@ test('migrations persistem e segregam o domínio residencial no PostgreSQL',{ski
   await repository.addNotification(home.id,{severity:'info',title:'QA',message:'Persistência validada'});
   await repository.addEnergyReading(home.id,{deviceId:created.id,roomId:room.id,kwh:1.25});
   await repository.updateEnergySettings(home.id,{tariff:1.1,currency:'BRL'});
-  await repository.saveFloorplan(home.id,{zoom:1.2,pan:{x:10,y:5}});
+  const plan=await repository.saveFloorplan(home.id,{floors:{[floor.id]:{background:null,rooms:{[room.id]:{x:0,y:0,width:50,height:50}}}}},1);
+  const plan2=await repository.saveFloorplan(home.id,{floors:{[floor.id]:{background:null,rooms:{[room.id]:{x:10,y:10,width:40,height:40}}}}},plan.version);
+  assert.equal(await repository.saveFloorplan(home.id,plan2.content,plan.version),false);
+  const restored=await repository.restoreFloorplan(home.id,plan.version,plan2.version);assert.equal(restored.content.floors[floor.id].rooms[room.id].x,0);
   assert.equal((await repository.listScenes(home.id)).length,1);
   assert.equal((await repository.listAutomations(home.id)).length,1);
   assert.equal((await repository.listNotifications(home.id)).length,1);
   assert.equal((await repository.getEnergy(home.id)).readings.length,1);
-  assert.equal((await repository.getFloorplan(home.id)).version,1);
+  assert.equal((await repository.getFloorplan(home.id)).version,4);
 });

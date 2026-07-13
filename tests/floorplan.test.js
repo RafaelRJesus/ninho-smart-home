@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeFloorplanPoint, normalizeZoom, pinchZoom } from '../src/domain/floorplan.js';
+import { defaultRoomGeometry, deviceLayerMetric, moveRoomGeometry, normalizeFloorplanPoint, normalizeZoom, pinchZoom, resizeRoomGeometry } from '../src/domain/floorplan.js';
 import { validateFloorplanContent } from '../server/domain/floorplan.js';
 
 test('coordenadas da planta compensam zoom e pan', () => {
@@ -26,6 +26,23 @@ test('upload aceita imagens e SVG seguro por piso',()=>{
   const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>').toString('base64');
   const value=validateFloorplanContent({floors:{'floor-1':{background:{name:'terreo.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${svg}`}}}});
   assert.equal(value.floors['floor-1'].background.name,'terreo.svg');
+});
+
+test('geometria cria, move e redimensiona cômodos dentro da planta',()=>{
+  const initial=defaultRoomGeometry(0,4);assert.ok(initial.width>5);assert.ok(initial.height>5);
+  assert.deepEqual(moveRoomGeometry({x:80,y:80,width:20,height:20},30,30),{x:80,y:80,width:20,height:20});
+  assert.deepEqual(resizeRoomGeometry({x:90,y:90,width:10,height:10},30,-30),{x:90,y:90,width:10,height:5});
+});
+
+test('camadas exibem somente métricas aplicáveis',()=>{
+  assert.equal(deviceLayerMetric({type:'ac',temperature:22},'temperature'),'22°C');
+  assert.equal(deviceLayerMetric({type:'plug',power:true},'energy'),'Em consumo');
+  assert.equal(deviceLayerMetric({type:'camera',online:false},'cameras'),'Câmera offline');
+  assert.equal(deviceLayerMetric({type:'light'},'security'),null);
+});
+
+test('geometria inválida ou fora da planta é rejeitada',()=>{
+  assert.throws(()=>validateFloorplanContent({floors:{floor:{rooms:{room:{x:90,y:0,width:20,height:20}}}}}),error=>error.code==='INVALID_FLOORPLAN_UPLOAD');
 });
 
 test('upload rejeita tipo inválido, excesso e SVG ativo',()=>{
