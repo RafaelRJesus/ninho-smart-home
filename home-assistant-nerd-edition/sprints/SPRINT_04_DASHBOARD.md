@@ -59,3 +59,11 @@ Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de val
 - Documentação atualizada.
 - Deploy em QA concluído.
 - Aprovação de QA registrada.
+
+## Evidências
+
+- API agregadora e testes: `server/application/dashboard-service.js` e `tests/dashboard.test.js`.
+- Interface e estados operacionais: `src/components/OperationalDashboard.jsx`.
+- Segregação residencial e contrato: `tests/home-domain-api.test.js` e `docs/openapi.yaml`.
+- Performance desktop/mobile e estados vazios: `tests/e2e/auth.spec.js`.
+- Gate DEV e QA: PR #7, com unitários, integração, PostgreSQL, E2E, segurança, build, smoke e carga aprovados.
