@@ -18,7 +18,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 02 | Estrutura da casa | **Concluído** | 2026-07-11 |
 | 03 | Integrações | **Concluído** | 2026-07-11 |
 | 04 | Dashboard | **Concluído** | 2026-07-13 |
-| 05 | Planta visual | Parcial | 2026-07-10 |
+| 05 | Planta visual | **Concluído** | 2026-07-13 |
 | 06 | Dispositivos na planta | Parcial | 2026-07-10 |
 | 07 | Controles avançados | Parcial | 2026-07-10 |
 | 08 | Edição e camadas | Parcial | 2026-07-10 |
@@ -95,9 +95,12 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Planta por ambientes com zoom, pan, centralização e seleção.
 - [x] Limites de zoom e persistência de posição durante a sessão.
-- [ ] Upload de planta SVG/imagem.
-- [ ] Tela cheia.
-- [ ] Gestos mobile automatizados e seleção por piso.
+- [x] Upload seguro de planta PNG, JPEG, WebP ou SVG, isolado por piso.
+- [x] Validação de tamanho e conteúdo, RBAC administrativo e auditoria do upload.
+- [x] Tela cheia com entrada e saída acessíveis.
+- [x] Gestos mobile automatizados e seleção por piso.
+- [x] Estados de carregamento, vazio e erro no visualizador.
+- [x] Gate DEV e QA aprovados no PR #8: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 06 — Planta baixa: dispositivos
 
