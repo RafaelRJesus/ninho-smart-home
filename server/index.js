@@ -26,6 +26,7 @@ import { PostgresHomeRepository } from './infrastructure/postgres-home-repositor
 import { EmailSender } from './infrastructure/email-sender.js';
 import { HomeIntegrationService } from './application/home-integration-service.js';
 import { DashboardService } from './application/dashboard-service.js';
+import { OrchestrationService } from './application/orchestration-service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tuyaConfigured = Boolean(process.env.TUYA_ACCESS_ID && process.env.TUYA_ACCESS_SECRET);
@@ -44,6 +45,8 @@ const events=new EventBus();
 const metrics=new Metrics();
 const integrations=new HomeIntegrationService({identity,repository:homeRepository,vault,events});
 const dashboard=new DashboardService({identity,repository:homeRepository,version:process.env.npm_package_version||'0.1.0'});
+const orchestration=new OrchestrationService({repository:homeRepository,events,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined});
+events.subscribe(event=>{if(event.type==='device.updated')orchestration.processDeviceEvent(event).catch(error=>console.error(JSON.stringify({level:'error',event:'automation.event.failed',code:error.code||'UNEXPECTED',correlationId:event.id})));});
 if(tuya)providers.register('tuya',withResilience(new TuyaProvider({client:tuya}),{timeoutMs:8000,retries:2}));
 if(process.env.HOME_ASSISTANT_URL&&process.env.HOME_ASSISTANT_TOKEN)providers.register('home-assistant',withResilience(new HomeAssistantProvider({baseUrl:process.env.HOME_ASSISTANT_URL,token:process.env.HOME_ASSISTANT_TOKEN}),{timeoutMs:5000,retries:2}));
 
@@ -58,7 +61,7 @@ export function createApp(){
   app.use(metrics.middleware());
   app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300),skip:req=>req.path.startsWith('/health')}));
   app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
-  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
+  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,orchestration,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
   app.get('/api/health',(_req,res)=>res.json({ok:true,uptime:Math.round(process.uptime()),timestamp:new Date().toISOString()}));
   app.get('/api/health/live',(_req,res)=>res.json({status:'alive'}));
   app.get('/api/health/ready',async(_req,res)=>{const integrations=await providers.health();const degraded=Object.values(integrations).some(item=>item?.status==='unavailable');res.status(degraded?503:200).json({status:degraded?'degraded':'ready',integrations});});
@@ -74,6 +77,7 @@ export function createApp(){
 export const app=createApp();
 if(process.env.NODE_ENV!=='test'){
   const server=app.listen(process.env.PORT||3001,()=>console.log(`Ninho disponível na porta ${process.env.PORT||3001}`));
-  const shutdown=()=>server.close(async()=>{await databasePool?.end();process.exit(0)});
+  const scheduler=setInterval(()=>orchestration.tickAll().catch(error=>console.error(JSON.stringify({level:'error',event:'automation.schedule.failed',code:error.code||'UNEXPECTED'}))),30000);scheduler.unref();
+  const shutdown=()=>{clearInterval(scheduler);server.close(async()=>{await databasePool?.end();process.exit(0)});};
   process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);
 }
