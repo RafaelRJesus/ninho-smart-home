@@ -145,7 +145,8 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] Motor contínuo de gatilhos manuais, por dispositivo e por horário, com condições.
 - [x] Detecção e alerta de conflitos, ciclos diretos e indiretos entre automações.
 - [x] Persistência PostgreSQL por residência das regras, alertas e execuções idempotentes.
-- [ ] Gate DEV e QA aprovados, regressão em `main` e deploy de produção validados.
+- [x] Gate DEV e QA aprovados no PR #12: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
+- [ ] Regressão em `main` e deploy de produção validados.
 
 ## Sprint 10 — Notificações e energia
 
