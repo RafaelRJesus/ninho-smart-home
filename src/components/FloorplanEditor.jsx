@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {DoorOpen,Expand,FileImage,Grid3X3,Lamp,Layers3,LocateFixed,Maximize2,Minus,Move,Plus,PlugZap,Thermometer,Trash2,Tv,Upload,ZoomIn,ZoomOut} from 'lucide-react';
 import {normalizeFloorplanPoint,normalizeZoom,pinchZoom} from '../domain/floorplan.js';
+import {deviceStatusLabel,deviceVisualStatus} from '../domain/device-command.js';
 
 const deviceIcons={light:Lamp,ac:Thermometer,tv:Tv,plug:PlugZap};
 function DeviceGlyph({type}){const Icon=deviceIcons[type]||PlugZap;return <Icon/>;}
@@ -67,7 +68,7 @@ export function FloorplanEditor({mode,devices,rooms,update,select,add,manage,api
           {background&&<img className="floorplan-background" src={background.dataUrl} alt={`Planta ${background.name}`}/>}
           {!floorState.loading&&!floorState.error&&!background&&<div className="floorplan-placeholder"><FileImage/><b>Nenhuma imagem neste piso</b><small>Use “Enviar planta” para adicionar um fundo.</small></div>}
           {layers.rooms&&<div className="room-grid">{floorRooms.map((room,index)=><button type="button" className={`room room-${index%8} ${selectedRoom===room.id?'selected':''}`} key={room.id} onClick={event=>{event.stopPropagation();setSelectedRoom(room.id)}}><div className="room-label">{layers.labels&&<><b>{room.name.toUpperCase()}</b><small>AMBIENTE {index+1}</small></>}</div><i className="window"/><i className="floor-door"/></button>)}</div>}
-          {layers.devices&&floorDevices.map(device=><button key={device.id} className={`point ${device.power?'on':'off'} ${!device.online?'offline':''} ${device.error?'error':''} ${editing?'movable':''}`} style={{left:`${device.x??50}%`,top:`${device.y??50}%`}} onPointerDown={event=>startDevice(event,device)} onClick={event=>{event.stopPropagation();if(!editing)select(device)}} aria-label={`${device.name}, ${!device.online?'offline':device.power?'ligado':'desligado'}`} aria-disabled={editing} title={editing?`Mover ${device.name}`:`Controlar ${device.name}`}><DeviceGlyph type={device.type}/>{layers.labels&&<span>{device.name}</span>}</button>)}
+          {layers.devices&&floorDevices.map(device=>{const visual=deviceVisualStatus(device);return <button key={device.id} data-status={visual} className={`point ${visual} ${editing?'movable':''}`} style={{left:`${device.x??50}%`,top:`${device.y??50}%`}} onPointerDown={event=>startDevice(event,device)} onClick={event=>{event.stopPropagation();if(!editing)select(device)}} aria-label={`${device.name}, ${deviceStatusLabel(device)}`} aria-busy={visual==='pending'} aria-disabled={editing} title={editing?`Mover ${device.name}`:`Controlar ${device.name}`}><DeviceGlyph type={device.type}/><i className="device-point-status" aria-hidden="true"/>{layers.labels&&<span>{device.name} · {deviceStatusLabel(device)}</span>}</button>})}
         </div>
       </div>
       <div className="floorplan-legend"><span className="on">Ligado</span><span className="off">Desligado</span><span className="offline">Offline</span><span className="error">Erro</span><small><Minus/> Arraste ou use dois dedos para navegar</small></div>
