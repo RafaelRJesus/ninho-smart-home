@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.6.0
+  version: 1.7.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -114,15 +114,37 @@ paths:
   /homes/{homeId}/devices/{deviceId}:
     patch:
       operationId: updateDevice
-      description: Atualiza metadados ou envia controles. Controles aguardam confirmação do provedor antes de persistir; falhas preservam o estado anterior. `requestId` correlaciona a tentativa sem expor detalhes do provedor.
+      description: Atualiza metadados ou envia controles compatíveis (`power`, `brightness`, `temperature`, `color`, `volume`, `mediaAction`, `locked`, `position` e `cameraAction`). Controles aguardam confirmação do provedor antes de persistir; falhas preservam o estado anterior. Fechaduras, portões e câmeras exigem `confirmed: true` e PIN no cabeçalho.
       security: [{ cookieAuth: [] }]
       parameters:
         - { $ref: '#/components/parameters/HomeId' }
         - { name: deviceId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: x-action-pin, in: header, required: false, description: Obrigatório em ações críticas quando configurado no servidor, schema: { type: string, writeOnly: true } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version: { type: integer, minimum: 1 }
+                requestId: { type: string, maxLength: 80 }
+                confirmed: { type: boolean }
+                power: { type: boolean }
+                brightness: { type: number, minimum: 0, maximum: 100 }
+                temperature: { type: number, minimum: 16, maximum: 30 }
+                color: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+                volume: { type: number, minimum: 0, maximum: 100 }
+                mediaAction: { type: string, enum: [play, pause, stop, mute, unmute, channel_up, channel_down] }
+                locked: { type: boolean }
+                position: { type: number, minimum: 0, maximum: 100 }
+                cameraAction: { type: string, enum: [privacy_on, privacy_off] }
       responses:
         '200': { description: Dispositivo atualizado com estado final confirmado pelo backend }
         '404': { description: Dispositivo não encontrado na residência }
-        '409': { description: Versão conflitante, dispositivo offline ou dispositivo em erro }
+        '403': { description: Papel insuficiente ou PIN de ação crítica inválido }
+        '409': { description: Versão conflitante, confirmação ausente, dispositivo offline ou dispositivo em erro }
+        '422': { description: Capacidade não suportada pelo dispositivo }
         '502': { description: O provedor não confirmou o comando; estado anterior preservado }
     delete:
       operationId: deleteDevice
