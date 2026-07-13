@@ -5,6 +5,7 @@ import { OperationalDashboard } from './components/OperationalDashboard.jsx';
 import { FloorplanEditor } from './components/FloorplanEditor.jsx';
 import { AutomationCenter } from './components/AutomationCenter.jsx';
 import { useRealtime } from './hooks/useRealtime.js';
+import { confirmedDevice, failedDevice, isDeviceControl, pendingDevice } from './domain/device-command.js';
 import './design-system/tokens.css';
 import './styles.css';
 
@@ -61,15 +62,24 @@ function App({user,home,onLogout}) {
   const today = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date()).toUpperCase();
 
   async function update(id, patch) {
+    const current=devices.find(device=>device.id===id);
+    if(!current)return null;
+    const controls=isDeviceControl(patch);
+    const requestId=controls?crypto.randomUUID():undefined;
+    if(controls){const optimistic=pendingDevice(current,patch,requestId);setDevices(items=>items.map(device=>device.id===id?optimistic:device));setSelected(device=>device?.id===id?optimistic:device);}
     try {
-      const current=devices.find(device=>device.id===id);
-      const r = await fetch(`${API}/devices/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({...patch,version:current?.version}) });
+      const r = await fetch(`${API}/devices/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({...patch,version:current?.version,requestId}) });
       const changed = await r.json();
-      if (!r.ok) throw new Error(changed.error);
-      setDevices(ds => ds.map(d => d.id === id ? changed : d)); setSelected(current => current?.id === id ? changed : current);
+      if (!r.ok) throw new Error(changed.message||changed.error||'Não foi possível confirmar o comando.');
+      const finalDevice=controls?confirmedDevice(changed,requestId):changed;
+      setDevices(ds => ds.map(d => d.id === id ? finalDevice : d)); setSelected(selected => selected?.id === id ? finalDevice : selected);
       setDashboardRevision(value=>value+1);
       notify(`${changed.name}: alteração salva.`,'success');
-    } catch (error) { notify(error.message,'error'); }
+      return finalDevice;
+    } catch (error) {
+      if(controls){const restored=failedDevice(current,requestId,error.message);setDevices(items=>items.map(device=>device.id===id?restored:device));setSelected(device=>device?.id===id?restored:device);}
+      notify(error.message,'error');return null;
+    }
   }
   async function send(text = command) {
     if (!text.trim()) return;
@@ -132,7 +142,7 @@ function EmptyState({hasQuery,clear,sync}){return <div className="empty-state"><
 
 function DeviceCard({d,update,select}) { return <article role="button" tabIndex="0" aria-label={`Abrir ${d.name}`} className={`device ${d.power?'on':''} ${!d.online?'unavailable':''}`} onClick={()=>select(d)} onKeyDown={e=>(e.key==='Enter'||e.key===' ')&&select(d)}><div className="device-top"><span><DeviceIcon type={d.type}/></span><button aria-label={`${d.power?'Desligar':'Ligar'} ${d.name}`} aria-pressed={d.power} disabled={!d.online} className={`switch ${d.power?'on':''}`} onClick={e=>{e.stopPropagation();update(d.id,{power:!d.power})}}><i/></button></div><h3>{d.name}</h3><p>{d.room}</p><div className="device-foot"><small className={d.online?'online':'offline'}>{d.online?<Wifi/>:<WifiOff/>}{d.online?'Online':'Offline'}</small><b>{d.power?'Ligado':'Desligado'}</b></div></article> }
 
-function DevicePanel({d,rooms,update,close}) { const [value,setValue]=useState(d.type==='light'?(d.brightness||50):(d.temperature||23));const property=d.type==='light'?'brightness':'temperature';const commit=()=>update(d.id,{[property]:+value});return <div className="overlay" onClick={close}><div className="panel" role="dialog" aria-modal="true" aria-label={`Controle de ${d.name}`} onClick={e=>e.stopPropagation()}><button aria-label="Fechar" className="close" onClick={close}><X/></button><div className="big-icon"><DeviceIcon type={d.type} size={30}/></div><h2>{d.name}</h2><p>{d.room} · {d.online?'Online':'Offline'}</p>{!d.online&&<div className="device-warning"><WifiOff/>Este aparelho está offline. Os controles estão indisponíveis.</div>}<button disabled={!d.online} className={`power-button ${d.power?'on':''}`} onClick={()=>update(d.id,{power:!d.power})}><Power/> {d.power?'Desligar':'Ligar'}</button><label>Ambiente<select value={d.room} onChange={e=>update(d.id,{room:e.target.value})}>{rooms.map(room=><option key={room.id}>{room.name}</option>)}</select></label>{['light','ac'].includes(d.type)&&<label>{d.type==='light'?'Brilho':'Temperatura'} <b>{value}{d.type==='light'?'%':'°C'}</b><input disabled={!d.online} type="range" min={d.type==='light'?1:16} max={d.type==='light'?100:30} value={value} onChange={e=>setValue(e.target.value)} onPointerUp={commit} onKeyUp={commit}/></label>}<small className="panel-hint">As alterações são enviadas ao aparelho e podem levar alguns segundos.</small></div></div> }
+function DevicePanel({d,rooms,update,close}) { const [value,setValue]=useState(d.type==='light'?(d.brightness||50):(d.temperature||23));const property=d.type==='light'?'brightness':'temperature';const pending=d.commandStatus==='pending';const commandFailed=d.commandStatus==='failed';const operationalError=d.error||d.status==='error';const available=d.online&&!operationalError&&!pending;const commit=()=>available&&update(d.id,{[property]:+value});return <div className="overlay" onClick={close}><div className="panel" role="dialog" aria-modal="true" aria-label={`Controle de ${d.name}`} onClick={e=>e.stopPropagation()}><button aria-label="Fechar" className="close" onClick={close}><X/></button><div className="big-icon"><DeviceIcon type={d.type} size={30}/></div><h2>{d.name}</h2><p>{d.room} · {d.online?'Online':'Offline'}</p>{!d.online&&<div className="device-warning"><WifiOff/>Este aparelho está offline. Os controles estão indisponíveis.</div>}{pending&&<div className="device-warning pending" role="status"><RefreshCw className="spin"/>Aguardando confirmação do dispositivo.</div>}{(commandFailed||operationalError)&&<div className="device-warning error" role="alert"><AlertCircle/>{d.commandError||'O dispositivo informou um erro. Tente novamente.'}</div>}<button disabled={!available} aria-busy={pending} className={`power-button ${d.power?'on':''}`} onClick={()=>update(d.id,{power:!d.power})}><Power/> {pending?'Confirmando...':commandFailed?'Tentar novamente':d.power?'Desligar':'Ligar'}</button><label>Ambiente<select disabled={pending} value={d.room} onChange={e=>update(d.id,{room:e.target.value})}>{rooms.map(room=><option key={room.id}>{room.name}</option>)}</select></label>{['light','ac'].includes(d.type)&&<label>{d.type==='light'?'Brilho':'Temperatura'} <b>{value}{d.type==='light'?'%':'°C'}</b><input disabled={!available} type="range" min={d.type==='light'?1:16} max={d.type==='light'?100:30} value={value} onChange={e=>setValue(e.target.value)} onPointerUp={commit} onKeyUp={commit}/></label>}<small className="panel-hint">O estado final é confirmado pelo aparelho através do backend.</small></div></div> }
 
 function AddDevice({apiBase,close,saved,rooms}) { const [form,setForm]=useState({name:'',room:rooms[0]?.name||'Sala',type:'light',x:50,y:50}); const [error,setError]=useState(''); async function submit(e){e.preventDefault();const r=await fetch(`${apiBase}/devices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});const data=await r.json();if(!r.ok)return setError(data.message||data.error);saved(data)} return <div className="overlay"><form className="panel" onSubmit={submit}><button type="button" className="close" onClick={close}><X/></button><h2>Adicionar ponto</h2><p>Cadastre um aparelho na sua planta.</p>{error&&<div className="form-error">{error}</div>}<label>Nome<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ex: Luz da varanda"/></label><label>Ambiente<select value={form.room} onChange={e=>setForm({...form,room:e.target.value})}>{rooms.map(room=><option key={room.id}>{room.name}</option>)}</select></label><label>Tipo<select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="light">Iluminação</option><option value="ac">Ar-condicionado</option><option value="tv">Televisão</option><option value="plug">Tomada</option></select></label><button className="primary" type="submit">Adicionar à planta</button></form></div> }
 
