@@ -26,3 +26,10 @@ test('normaliza escala de temperatura recebida da Tuya',()=>{
 test('rejeita controle não suportado pelo aparelho', () => {
   assert.throws(() => commandFor([], 'power', true), /não oferece/);
 });
+
+test('mapeia cor, volume e privacidade para códigos Tuya disponíveis',()=>{
+  const functions=[{code:'colour_data_v2',values:'{}'},{code:'volume_set',values:'{}'},{code:'basic_private',values:'{}'}];
+  assert.equal(commandFor(functions,'color','#ff0000').code,'colour_data_v2');
+  assert.deepEqual(commandFor(functions,'volume',42),{code:'volume_set',value:42});
+  assert.deepEqual(commandFor(functions,'cameraAction','privacy_on'),{code:'basic_private',value:true});
+});

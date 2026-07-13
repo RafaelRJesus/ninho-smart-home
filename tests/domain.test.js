@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deviceControls, ensureDeviceControllable, validateDevicePatch } from '../server/domain/device.js';
+import { deviceControls, ensureDeviceControllable, ensureSupportedControls, isCriticalControl, validateDevicePatch } from '../server/domain/device.js';
 import { confirmedDevice, deviceStatusLabel, failedDevice, pendingDevice } from '../src/domain/device-command.js';
 import { assertDeviceProvider, DEVICE_PROVIDER_METHODS } from '../server/integrations/device-provider.js';
 
@@ -30,4 +30,16 @@ test('domínio bloqueia comandos para offline e erro sem bloquear posicionamento
   assert.doesNotThrow(() => ensureDeviceControllable({ online: false, status: 'offline' }, {}));
   assert.throws(() => ensureDeviceControllable({ online: false, status: 'offline' }, { power: true }), error => error.code === 'DEVICE_OFFLINE');
   assert.throws(() => ensureDeviceControllable({ online: true, status: 'error' }, { power: true }), error => error.code === 'DEVICE_ERROR');
+});
+
+test('controles avançados validam capacidades, valores e criticidade',()=>{
+  const light={type:'light',capabilities:[{code:'color',writable:true}]};
+  assert.deepEqual(deviceControls({color:'#12ADEF',volume:50,name:'Sala'}),{color:'#12ADEF',volume:50});
+  assert.doesNotThrow(()=>ensureSupportedControls(light,{color:'#12ADEF'}));
+  assert.throws(()=>ensureSupportedControls(light,{volume:20}),error=>error.code==='CAPABILITY_NOT_SUPPORTED');
+  assert.throws(()=>validateDevicePatch({color:'red'}),error=>error.code==='VALIDATION_ERROR');
+  assert.throws(()=>validateDevicePatch({volume:101}),error=>error.code==='VALIDATION_ERROR');
+  assert.throws(()=>validateDevicePatch({mediaAction:'rewind'}),error=>error.code==='VALIDATION_ERROR');
+  assert.equal(isCriticalControl({type:'lock'},{locked:false}),true);
+  assert.equal(isCriticalControl({type:'tv'},{volume:20}),false);
 });
