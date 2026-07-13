@@ -40,6 +40,8 @@ function App({user,home,onLogout}) {
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardRevision, setDashboardRevision] = useState(0);
   const [theme, setTheme] = useState(() => localStorage.getItem('ninho-theme') || 'dark');
+  const [floorplanDirty,setFloorplanDirty]=useState(false);
+  function navigate(next){if(view==='plant'&&floorplanDirty&&!window.confirm('Você possui alterações não salvas na planta. Deseja sair e descartá-las?'))return;setFloorplanDirty(false);setView(next);}
 
   const receiveEvent = useCallback(event => {
     if (!event.type?.startsWith('device.')) return;
@@ -102,10 +104,10 @@ function App({user,home,onLogout}) {
     <aside>
       <div className="brand"><span><Home size={20}/></span> Ninho</div>
       <nav>
-        <button aria-label="Visão geral" aria-current={view==='dashboard'?'page':undefined} className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')}><LayoutDashboard/> <span>Visão geral</span></button>
+        <button aria-label="Visão geral" aria-current={view==='dashboard'?'page':undefined} className={view === 'dashboard' ? 'active' : ''} onClick={() => navigate('dashboard')}><LayoutDashboard/> <span>Visão geral</span></button>
         <button aria-label="Minha planta" aria-current={view==='plant'?'page':undefined} className={view === 'plant' ? 'active' : ''} onClick={() => setView('plant')}><Map/> <span>Minha planta</span></button>
-        <button aria-label="Rotinas" aria-current={view==='routines'?'page':undefined} className={view === 'routines' ? 'active' : ''} onClick={() => setView('routines')}><Workflow/> <span>Rotinas</span></button>
-        <button aria-label="Configurações" aria-current={view==='settings'?'page':undefined} className={view === 'settings' ? 'active' : ''} onClick={() => setView('settings')}><Settings/> <span>Configurações</span></button>
+        <button aria-label="Rotinas" aria-current={view==='routines'?'page':undefined} className={view === 'routines' ? 'active' : ''} onClick={() => navigate('routines')}><Workflow/> <span>Rotinas</span></button>
+        <button aria-label="Configurações" aria-current={view==='settings'?'page':undefined} className={view === 'settings' ? 'active' : ''} onClick={() => navigate('settings')}><Settings/> <span>Configurações</span></button>
       </nav>
       <div className="house-state"><div className="state-icon"><Sparkles/></div><b>Casa conectada</b><small>{devices.filter(d => d.online).length} de {devices.length} dispositivos online</small><div className="bar"><i style={{width:`${devices.length ? devices.filter(d=>d.online).length/devices.length*100 : 0}%`}}/></div></div>
       <button className="theme-toggle" onClick={()=>setTheme(value=>value==='dark'?'light':'dark')} aria-label={`Ativar tema ${theme==='dark'?'claro':'escuro'}`}>{theme==='dark'?<Sun/>:<Moon/>}<span>{theme==='dark'?'Tema claro':'Tema escuro'}</span></button>
@@ -124,7 +126,7 @@ function App({user,home,onLogout}) {
         {loading?<DeviceSkeleton/>:filteredDevices.length?<div className="devices">{filteredDevices.map(d=><DeviceCard key={d.id} d={d} update={update} select={setSelected}/>)}</div>:<EmptyState hasQuery={Boolean(query||roomFilter!=='Todos')} clear={()=>{setQuery('');setRoomFilter('Todos')}} sync={load}/>} 
       </>}
 
-      {view === 'plant' && <FloorplanEditor mode={status.mode} devices={devices} rooms={rooms} update={update} select={setSelected} add={()=>status.mode==='tuya'?notify('Adicione o aparelho no Smart Life e clique em Sincronizar.','info'):setAdding(true)} manage={()=>setManagingRooms(true)} apiBase={API} notify={notify}/>}
+      {view === 'plant' && <FloorplanEditor mode={status.mode} devices={devices} rooms={rooms} update={update} select={setSelected} add={()=>status.mode==='tuya'?notify('Adicione o aparelho no Smart Life e clique em Sincronizar.','info'):setAdding(true)} manage={()=>setManagingRooms(true)} apiBase={API} notify={notify} onDirtyChange={setFloorplanDirty}/>}
       {view === 'routines' && <AutomationCenter devices={devices} notify={notify} apiBase={API}/>}
       {view === 'settings' && <SettingsView status={status} connection={connection} deviceCount={devices.length} lastSync={lastSync} reload={load} notify={notify} home={home}/>} 
     </main>
