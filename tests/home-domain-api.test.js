@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
+import crypto from 'node:crypto';
 
 process.env.NODE_ENV='test';
 process.env.TUYA_ACCESS_ID='';
@@ -77,6 +78,23 @@ test('entradas inválidas e recurso de outra casa são rejeitados',async()=>{
   assert.equal(preserved.power,false);assert.equal(preserved.version,offline.body.version);
   const crossDevice=await second.agent.patch(`/api/v1/homes/${first.home.id}/devices/${offline.body.id}`).send({power:true,version:offline.body.version});
   assert.equal(crossDevice.status,403);
+});
+
+test('controles avançados respeitam capacidade, confirmação e PIN',async()=>{
+  const {agent,home}=await household('advanced-controls@ninho.local','Controles');
+  const room=(await agent.get(`/api/v1/homes/${home.id}/rooms`)).body[0];
+  const tv=await agent.post(`/api/v1/homes/${home.id}/devices`).send({name:'TV segura',roomId:room.id,type:'tv',capabilities:[{code:'volume',writable:true},{code:'mediaAction',writable:true}]});
+  assert.equal((await agent.patch(`/api/v1/homes/${home.id}/devices/${tv.body.id}`).send({volume:101,version:tv.body.version})).body.code,'VALIDATION_ERROR');
+  const volume=await agent.patch(`/api/v1/homes/${home.id}/devices/${tv.body.id}`).send({volume:35,version:tv.body.version});assert.equal(volume.status,200);assert.equal(volume.body.volume,35);
+  const unsupported=await agent.patch(`/api/v1/homes/${home.id}/devices/${tv.body.id}`).send({color:'#00ff00',version:volume.body.version});assert.equal(unsupported.status,422);assert.equal(unsupported.body.code,'CAPABILITY_NOT_SUPPORTED');
+  const lock=await agent.post(`/api/v1/homes/${home.id}/devices`).send({name:'Fechadura',roomId:room.id,type:'lock',locked:true,capabilities:[{code:'locked',writable:true}]});
+  const previous=process.env.CRITICAL_ACTION_PIN_SHA256;process.env.CRITICAL_ACTION_PIN_SHA256=crypto.createHash('sha256').update('7419').digest('hex');
+  try{
+    const confirmation=await agent.patch(`/api/v1/homes/${home.id}/devices/${lock.body.id}`).send({locked:false,version:lock.body.version});assert.equal(confirmation.status,409);assert.equal(confirmation.body.code,'CONFIRMATION_REQUIRED');
+    const missingPin=await agent.patch(`/api/v1/homes/${home.id}/devices/${lock.body.id}`).send({locked:false,version:lock.body.version,confirmed:true});assert.equal(missingPin.status,403);assert.equal(missingPin.body.code,'ACTION_PIN_REQUIRED');
+    const unlocked=await agent.patch(`/api/v1/homes/${home.id}/devices/${lock.body.id}`).set('x-action-pin','7419').send({locked:false,version:lock.body.version,confirmed:true});assert.equal(unlocked.status,200);assert.equal(unlocked.body.locked,false);
+    const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);const command=audit.body.find(item=>item.type==='DEVICE_COMMAND_CONFIRMED'&&item.targetId===lock.body.id);assert.equal(command.metadata.critical,true);assert.equal(JSON.stringify(command).includes('7419'),false);
+  }finally{if(previous===undefined)delete process.env.CRITICAL_ACTION_PIN_SHA256;else process.env.CRITICAL_ACTION_PIN_SHA256=previous;}
 });
 
 test('CRUD versionado da estrutura audita alterações e rejeita versões antigas',async()=>{

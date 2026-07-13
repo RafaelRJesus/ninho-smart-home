@@ -18,8 +18,8 @@ test('migrations persistem e segregam o domínio residencial no PostgreSQL',{ski
   const other=await identity.createHome({name:'Outra casa PostgreSQL',ownerId:owner.id});
   const floor=await identity.createFloor({homeId:home.id,name:'Térreo',position:0});
   const room=await identity.createRoom({floorId:floor.id,name:'Sala',position:0});
-  const created=await repository.saveDevice(home.id,{name:'Luz persistida',type:'light',roomId:room.id,externalId:`qa-${suffix}`,power:true,brightness:70,x:20,y:30});
-  assert.equal(created.room,'Sala');assert.equal(created.power,true);assert.equal(created.version,1);
+  const created=await repository.saveDevice(home.id,{name:'Luz persistida',type:'light',roomId:room.id,externalId:`qa-${suffix}`,power:true,brightness:70,color:'#12abef',capabilities:[{code:'color',writable:true}],x:20,y:30});
+  assert.equal(created.room,'Sala');assert.equal(created.power,true);assert.equal(created.color,'#12abef');assert.equal(created.capabilities[0].code,'color');assert.equal(created.version,1);
   const failed=await repository.saveDevice(home.id,{name:'Sensor com erro',type:'sensor',roomId:room.id,externalId:`qa-error-${suffix}`,status:'error'});
   assert.equal(failed.status,'error');assert.equal(failed.error,true);assert.equal(failed.online,false);
   const changed=await repository.updateDevice(home.id,created.id,{name:'Luz versionada',version:created.version});assert.equal(changed.version,2);

@@ -113,3 +113,13 @@ test('comando na planta mostra pendência, restaura falha e permite tentar novam
   await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar');await expect(page.getByRole('button',{name:'Tentar novamente'})).toBeVisible();await expect(page.locator('.point.error')).toHaveCount(1);
   await page.getByRole('button',{name:'Tentar novamente'}).click();await expect(page.getByRole('button',{name:'Desligar'})).toBeVisible();await expect(page.locator('.point.on')).toHaveCount(1);
 });
+
+test('painel mostra apenas capacidades suportadas e confirma ação crítica com PIN',async({page},testInfo)=>{
+  const email=`advanced-${testInfo.project.name}-${Date.now()}@ninho.local`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();await page.getByLabel('Seu nome').fill('Controles avançados');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-controles-avancados');await page.getByRole('button',{name:'Criar conta segura'}).click();await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  const homeId=await page.evaluate(async()=>await (await fetch('/api/v1/homes')).json()).then(homes=>homes[0].id);
+  await page.evaluate(async id=>{const rooms=await (await fetch(`/api/v1/homes/${id}/rooms`)).json();await fetch(`/api/v1/homes/${id}/devices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Fechadura principal',roomId:rooms[0].id,type:'lock',locked:true,x:42,y:38,capabilities:[{code:'locked',writable:true}]})});},homeId);
+  await page.reload();await expect(page.getByTestId('dashboard-ready')).toBeVisible();await page.getByRole('button',{name:'Minha planta'}).click();await page.getByRole('button',{name:/Fechadura principal/}).click();
+  await expect(page.getByRole('button',{name:'Destrancar fechadura'})).toBeVisible();await expect(page.getByRole('button',{name:'Ligar'})).toHaveCount(0);await expect(page.getByLabel('Cor da iluminação')).toHaveCount(0);
+  await page.getByRole('button',{name:'Destrancar fechadura'}).click();await expect(page.getByRole('alertdialog',{name:'Confirmar ação crítica'})).toBeVisible();await expect(page.getByRole('button',{name:'Confirmar com PIN'})).toBeDisabled();await page.getByLabel('PIN de segurança').fill('7419');await page.getByRole('button',{name:'Confirmar com PIN'}).click();await expect(page.getByRole('button',{name:'Trancar fechadura'})).toBeVisible();
+});
