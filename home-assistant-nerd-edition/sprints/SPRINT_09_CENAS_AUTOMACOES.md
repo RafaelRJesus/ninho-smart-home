@@ -61,4 +61,4 @@ Entregar um motor residencial contínuo, seguro e rastreável para agrupar açõ
 - [x] Pipeline DEV aprovado no PR #12.
 - [x] Testes de integração e PostgreSQL aprovados em QA no PR #12.
 - [x] E2E desktop/mobile, build, smoke, carga, segredos e CodeQL aprovados no PR #12.
-- [ ] Deploy de produção validado por health check e smoke test.
+- [x] Deploy de produção `fbf4914` validado como Live no Render em 2026-07-13, com health check `/api/health/live` respondendo `200`; regressão, smoke e carga aprovados na `main`.
