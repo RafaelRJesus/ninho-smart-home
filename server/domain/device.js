@@ -1,6 +1,14 @@
-import { errors } from '../core/app-error.js';
+import { AppError, errors } from '../core/app-error.js';
 
 const allowed = ['name', 'room', 'type', 'online', 'power', 'brightness', 'temperature', 'x', 'y'];
+
+export const deviceControls = patch => Object.fromEntries(Object.entries(patch).filter(([key]) => ['power', 'brightness', 'temperature'].includes(key)));
+
+export function ensureDeviceControllable(device, controls) {
+  if (!Object.keys(controls).length) return;
+  if (device?.status === 'error' || device?.error) throw new AppError('DEVICE_ERROR', 'O dispositivo está em erro e não pode receber comandos.', 409);
+  if (device?.online === false || device?.status === 'offline') throw new AppError('DEVICE_OFFLINE', 'O dispositivo está offline e não pode receber comandos.', 409);
+}
 
 export function validateDevicePatch(body) {
   const patch = Object.fromEntries(Object.entries(body || {}).filter(([key]) => allowed.includes(key)));
