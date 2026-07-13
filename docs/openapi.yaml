@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.8.0
+  version: 1.9.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -241,10 +241,36 @@ paths:
         '200': { description: Cenas da residência }
     post:
       operationId: createScene
+      description: Cria uma cena administrativa com até 50 ações não críticas validadas contra as capacidades dos dispositivos.
       security: [{ cookieAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SceneInput' }
       responses:
         '201': { description: Cena criada }
+        '400': { description: Cena ou dispositivo inválido }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Ação crítica não permitida em cena }
+  /homes/{homeId}/scenes/{sceneId}/execute:
+    post:
+      operationId: executeScene
+      description: Executa a cena de forma idempotente. O mesmo executionId retorna status duplicate sem repetir comandos.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { name: sceneId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { executionId: { type: string, maxLength: 200 } }
+      responses:
+        '200': { description: Execução succeeded, partial, failed ou duplicate com resultado por dispositivo }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /homes/{homeId}/automations:
     get:
       operationId: listAutomations
@@ -254,10 +280,36 @@ paths:
         '200': { description: Automações da residência }
     post:
       operationId: createAutomation
+      description: Cria automação manual, agendada ou por mudança de dispositivo, bloqueando ciclos e registrando conflitos.
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AutomationInput' }
+      responses:
+        '201': { description: Automação criada }
+        '409': { description: Ciclo de automação detectado }
+  /homes/{homeId}/automations/{automationId}/run:
+    post:
+      operationId: runAutomation
+      description: Testa manualmente uma automação ativa usando execução idempotente.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { name: automationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Resultado persistido da execução }
+        '409': { description: Automação desativada }
+  /homes/{homeId}/executions:
+    get:
+      operationId: listOrchestrationExecutions
+      description: Lista a trilha das últimas 200 execuções de cenas e automações da residência.
       security: [{ cookieAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/HomeId' }]
       responses:
-        '201': { description: Automação criada }
+        '200': { description: Execuções segregadas por residência }
   /homes/{homeId}/notifications:
     get:
       operationId: listNotifications
@@ -336,6 +388,44 @@ paths:
         '409': { description: Integração ainda não configurada }
         '502': { description: Falha isolada do provedor }
 components:
+  schemas:
+    SceneInput:
+      type: object
+      required: [name, actions]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        actions:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            required: [deviceId, controls]
+            properties:
+              deviceId: { type: string }
+              controls: { type: object, additionalProperties: true }
+    AutomationInput:
+      type: object
+      required: [name, sceneId, trigger]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        sceneId: { type: string, format: uuid }
+        enabled: { type: boolean, default: true }
+        trigger:
+          oneOf:
+            - { type: object, required: [type], properties: { type: { const: manual } } }
+            - { type: object, required: [type, at], properties: { type: { const: schedule }, at: { type: string, pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' }, days: { type: array, items: { type: integer, minimum: 0, maximum: 6 } } } }
+            - { $ref: '#/components/schemas/DevicePredicate' }
+        conditions: { type: array, items: { $ref: '#/components/schemas/DevicePredicate' } }
+    DevicePredicate:
+      type: object
+      required: [type, deviceId, field, value]
+      properties:
+        type: { const: device_state }
+        deviceId: { type: string }
+        field: { type: string }
+        operator: { type: string, enum: [eq, neq, gt, gte, lt, lte], default: eq }
+        value: {}
   securitySchemes:
     cookieAuth:
       type: apiKey
