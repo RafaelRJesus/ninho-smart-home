@@ -142,9 +142,10 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] CRUD e execução de cenas.
 - [x] CRUD, ativação e teste manual de automações.
 - [x] Resultado total/parcial e deduplicação de execução.
-- [ ] Motor contínuo de gatilhos e condições.
-- [ ] Detecção e alerta de conflitos/loops entre automações.
-- [ ] Persistência PostgreSQL por residência.
+- [x] Motor contínuo de gatilhos manuais, por dispositivo e por horário, com condições.
+- [x] Detecção e alerta de conflitos, ciclos diretos e indiretos entre automações.
+- [x] Persistência PostgreSQL por residência das regras, alertas e execuções idempotentes.
+- [ ] Gate DEV e QA aprovados, regressão em `main` e deploy de produção validados.
 
 ## Sprint 10 — Notificações e energia
 
