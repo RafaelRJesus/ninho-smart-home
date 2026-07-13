@@ -27,8 +27,12 @@ export function rateLimit({windowMs=60000,max=60}={}){
 }
 
 export function requireCriticalPin(req,res,next){
-  const expected=process.env.CRITICAL_ACTION_PIN_SHA256;if(!expected)return next();
-  const supplied=crypto.createHash('sha256').update(String(req.get('x-action-pin')||'')).digest('hex');
-  const valid=expected.length===supplied.length&&crypto.timingSafeEqual(Buffer.from(expected),Buffer.from(supplied));
+  const valid=criticalPinValid(req);
   if(!valid)return res.status(403).json({code:'ACTION_PIN_REQUIRED',message:'PIN de ação crítica inválido.',correlationId:req.correlationId});next();
+}
+
+export function criticalPinValid(req){
+  const expected=process.env.CRITICAL_ACTION_PIN_SHA256;if(!expected)return true;
+  const supplied=crypto.createHash('sha256').update(String(req.get('x-action-pin')||'')).digest('hex');
+  return expected.length===supplied.length&&crypto.timingSafeEqual(Buffer.from(expected),Buffer.from(supplied));
 }
