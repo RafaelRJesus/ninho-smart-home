@@ -38,13 +38,23 @@ test('domínio v1 persiste recursos sob a residência autorizada',async()=>{
   assert.equal(dashboard.body.energy.totalKwh,null);assert.equal(dashboard.body.security.status,'protected');
   const floor=(await agent.get(`/api/v1/homes/${home.id}/floors`)).body[0];
   const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>').toString('base64');
-  const floorplan=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({floors:{[floor.id]:{background:{name:'casa.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${svg}`}}}});
+  const floorplan=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:1,content:{floors:{[floor.id]:{background:{name:'casa.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${svg}`},rooms:{[rooms.body[0].id]:{x:5,y:5,width:45,height:45}}}}}});
   assert.equal(floorplan.status,200);assert.equal(floorplan.body.content.floors[floor.id].background.name,'casa.svg');
   const unsafe=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>').toString('base64');
-  const rejected=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({floors:{[floor.id]:{background:{name:'unsafe.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${unsafe}`}}}});
+  const rejected=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:floorplan.body.version,content:{floors:{[floor.id]:{background:{name:'unsafe.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${unsafe}`}}}}});
   assert.equal(rejected.status,400);assert.equal(rejected.body.code,'INVALID_FLOORPLAN_UPLOAD');
   const preserved=await agent.get(`/api/v1/homes/${home.id}/floorplan`);assert.equal(preserved.body.content.floors[floor.id].background.name,'casa.svg');
   const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);assert.ok(audit.body.some(item=>item.type==='FLOORPLAN_UPDATED'));
+});
+
+test('planta mantém histórico, restaura snapshot e rejeita concorrência',async()=>{
+  const {agent,home}=await household('floorplan-version@ninho.local','Versões');const rooms=(await agent.get(`/api/v1/homes/${home.id}/rooms`)).body;const floor=(await agent.get(`/api/v1/homes/${home.id}/floors`)).body[0];
+  const first=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:1,content:{floors:{[floor.id]:{background:null,rooms:{[rooms[0].id]:{x:0,y:0,width:50,height:50}}}}}});assert.equal(first.status,200);
+  const second=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:first.body.version,content:{floors:{[floor.id]:{background:null,rooms:{[rooms[0].id]:{x:10,y:10,width:40,height:40}}}}}});assert.equal(second.status,200);
+  const stale=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:first.body.version,content:second.body.content});assert.equal(stale.status,409);assert.equal(stale.body.code,'VERSION_CONFLICT');
+  const versions=await agent.get(`/api/v1/homes/${home.id}/floorplan/versions`);assert.deepEqual(versions.body.map(item=>item.version),[3,2,1]);
+  const restored=await agent.post(`/api/v1/homes/${home.id}/floorplan/versions/2/restore`).send({version:second.body.version});assert.equal(restored.status,200);assert.equal(restored.body.content.floors[floor.id].rooms[rooms[0].id].x,0);
+  const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);assert.ok(audit.body.some(item=>item.type==='FLOORPLAN_RESTORED'));
 });
 
 test('RBAC impede acesso cruzado e não vaza recursos entre residências',async()=>{

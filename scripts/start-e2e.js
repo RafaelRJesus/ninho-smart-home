@@ -9,6 +9,7 @@ Object.assign(process.env,{
   TURNSTILE_REQUIRED:'false',
   DATABASE_URL:'',
   AUTH_RATE_LIMIT_MAX:'200',
+  API_RATE_LIMIT_MAX:'2000',
 });
 
 await import('../server/index.js');
