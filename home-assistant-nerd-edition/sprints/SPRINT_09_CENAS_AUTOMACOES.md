@@ -58,7 +58,7 @@ Entregar um motor residencial contínuo, seguro e rastreável para agrupar açõ
 
 - [x] Código e contrato revisados localmente.
 - [x] Testes unitários do motor aprovados.
-- [ ] Pipeline DEV aprovado.
-- [ ] Testes de integração e PostgreSQL aprovados em QA.
-- [ ] E2E desktop/mobile e regressão aprovados em QA.
+- [x] Pipeline DEV aprovado no PR #12.
+- [x] Testes de integração e PostgreSQL aprovados em QA no PR #12.
+- [x] E2E desktop/mobile, build, smoke, carga, segredos e CodeQL aprovados no PR #12.
 - [ ] Deploy de produção validado por health check e smoke test.
