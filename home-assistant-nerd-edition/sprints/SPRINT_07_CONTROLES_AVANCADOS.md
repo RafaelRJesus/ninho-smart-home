@@ -54,9 +54,16 @@ Entregar controles avançados orientados pelas capacidades reais de cada disposi
 
 ## Definition of Done
 
-- [ ] Código revisado.
-- [ ] Pipeline aprovado.
-- [ ] Critérios de aceite atendidos.
-- [ ] Documentação atualizada.
-- [ ] Deploy em QA concluído.
-- [ ] Aprovação de QA registrada.
+- [x] Código revisado.
+- [x] Pipeline aprovado.
+- [x] Critérios de aceite atendidos.
+- [x] Documentação atualizada.
+- [x] Deploy em QA concluído.
+- [x] Aprovação de QA registrada.
+
+## Evidências
+
+- Gate DEV aprovado na branch `feat/sprint-07-advanced-controls`.
+- Gate QA aprovado no PR #10: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga concorrente, auditoria de dependências, segredos e CodeQL.
+- Controles e requisitos de segurança documentados no contrato `docs/openapi.yaml` versão 1.7.0.
+- Cenários positivos, negativos, alternativos, adapters e persistência cobertos em `tests/`.
