@@ -8,3 +8,8 @@ export function normalizeFloorplanPoint({ clientX, clientY, rect, pan, zoom }) {
 }
 
 export function normalizeZoom(value) { return clamp(value, .6, 2.5); }
+
+export function pinchZoom(initialZoom,initialDistance,currentDistance){
+  if(!Number.isFinite(initialDistance)||initialDistance<=0||!Number.isFinite(currentDistance))return normalizeZoom(initialZoom);
+  return normalizeZoom(initialZoom*(currentDistance/initialDistance));
+}

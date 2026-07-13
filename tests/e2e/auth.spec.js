@@ -73,3 +73,29 @@ test('configurações oferecem fluxos acessíveis para Tuya e Home Assistant',as
   await expect(page.getByLabel('URL do Home Assistant')).toBeVisible();await expect(page.getByLabel('Long-Lived Access Token')).toHaveAttribute('type','password');
   await expect(page.getByRole('button',{name:'Testar'})).toBeDisabled();await expect(page.getByRole('button',{name:'Sincronizar'})).toBeDisabled();
 });
+
+test('planta permite upload, seleção de piso, cômodo e tela cheia',async({page},testInfo)=>{
+  const email=`floorplan-${testInfo.project.name}-${Date.now()}@ninho.local`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();
+  await page.getByLabel('Seu nome').fill('Planta E2E');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-planta-e2e');await page.getByRole('button',{name:'Criar conta segura'}).click();
+  await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  const homeId=await page.evaluate(async()=>await (await fetch('/api/v1/homes')).json()).then(homes=>homes[0].id);
+  await page.evaluate(async id=>{const floor=await (await fetch(`/api/v1/homes/${id}/floors`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Superior'})})).json();await fetch(`/api/v1/homes/${id}/floors/${floor.id}/rooms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Escritório'})});},homeId);
+  await page.reload();await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  await page.getByRole('button',{name:'Minha planta'}).click();
+  await expect(page.getByRole('tab',{name:'Térreo'})).toHaveAttribute('aria-selected','true');
+  await page.locator('input[type="file"]').setInputFiles({name:'terreo.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#dfe9e5"/></svg>')});
+  await expect(page.getByAltText('Planta terreo.svg')).toBeVisible();
+  await page.getByRole('button',{name:/SALA/}).click();await expect(page.locator('.room-context')).toContainText('Sala');
+  await page.getByRole('tab',{name:'Superior'}).click();await expect(page.getByRole('tab',{name:'Superior'})).toHaveAttribute('aria-selected','true');
+  await expect(page.getByRole('button',{name:/ESCRITÓRIO/})).toBeVisible();await expect(page.getByAltText('Planta terreo.svg')).toHaveCount(0);
+  await page.getByRole('button',{name:'Abrir em tela cheia'}).click();await expect(page.locator('.floorplan-shell')).toHaveClass(/fullscreen/);await page.getByRole('button',{name:'Sair da tela cheia'}).click();
+});
+
+test('gesto mobile de dois dedos altera o zoom e respeita os limites',async({page},testInfo)=>{
+  test.skip(!testInfo.project.name.startsWith('mobile'),'Cenário exclusivo do projeto mobile');
+  const email=`pinch-${Date.now()}@ninho.local`;await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();
+  await page.getByLabel('Seu nome').fill('Pinch E2E');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-pinch-e2e');await page.getByRole('button',{name:'Criar conta segura'}).click();await expect(page.getByTestId('dashboard-ready')).toBeVisible();await page.getByRole('button',{name:'Minha planta'}).click();
+  const viewport=page.locator('.floorplan-viewport');await viewport.dispatchEvent('pointerdown',{pointerId:1,pointerType:'touch',clientX:120,clientY:200});await viewport.dispatchEvent('pointerdown',{pointerId:2,pointerType:'touch',clientX:220,clientY:200});await viewport.dispatchEvent('pointermove',{pointerId:2,pointerType:'touch',clientX:300,clientY:200});
+  await expect(page.locator('.floorplan-controls output')).toHaveText('180%');await viewport.dispatchEvent('pointerup',{pointerId:1,pointerType:'touch'});await viewport.dispatchEvent('pointerup',{pointerId:2,pointerType:'touch'});
+});
