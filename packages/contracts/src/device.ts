@@ -1,5 +1,6 @@
 export type DeviceStatus = 'online' | 'offline' | 'error' | 'unknown';
 export type CommandStatus = 'pending' | 'acknowledged' | 'succeeded' | 'failed' | 'timed_out';
+export type DeviceVisualStatus = 'on' | 'off' | 'offline' | 'error' | 'pending';
 
 export interface DeviceCapability {
   code: string;
