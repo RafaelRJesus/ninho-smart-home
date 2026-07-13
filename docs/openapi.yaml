@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.4.0
+  version: 1.5.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -150,10 +150,13 @@ paths:
         '200': { description: Planta e versão atuais }
     put:
       operationId: saveFloorplan
+      description: Persiste fundos PNG, JPEG, WebP ou SVG seguro de até 2 MB por piso. Scripts e referências externas em SVG são rejeitados.
       security: [{ cookieAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/HomeId' }]
       responses:
         '200': { description: Nova versão da planta persistida }
+        '400': { description: Estrutura, piso, tipo, tamanho ou conteúdo SVG inválido }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /homes/{homeId}/scenes:
     get:
       operationId: listScenes

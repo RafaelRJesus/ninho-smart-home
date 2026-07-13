@@ -35,6 +35,15 @@ test('domínio v1 persiste recursos sob a residência autorizada',async()=>{
   const dashboard=await agent.get(`/api/v1/homes/${home.id}/dashboard`);
   assert.equal(dashboard.status,200);assert.equal(dashboard.body.devices.total,1);
   assert.equal(dashboard.body.energy.totalKwh,null);assert.equal(dashboard.body.security.status,'protected');
+  const floor=(await agent.get(`/api/v1/homes/${home.id}/floors`)).body[0];
+  const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>').toString('base64');
+  const floorplan=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({floors:{[floor.id]:{background:{name:'casa.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${svg}`}}}});
+  assert.equal(floorplan.status,200);assert.equal(floorplan.body.content.floors[floor.id].background.name,'casa.svg');
+  const unsafe=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>').toString('base64');
+  const rejected=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({floors:{[floor.id]:{background:{name:'unsafe.svg',mime:'image/svg+xml',dataUrl:`data:image/svg+xml;base64,${unsafe}`}}}});
+  assert.equal(rejected.status,400);assert.equal(rejected.body.code,'INVALID_FLOORPLAN_UPLOAD');
+  const preserved=await agent.get(`/api/v1/homes/${home.id}/floorplan`);assert.equal(preserved.body.content.floors[floor.id].background.name,'casa.svg');
+  const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);assert.ok(audit.body.some(item=>item.type==='FLOORPLAN_UPDATED'));
 });
 
 test('RBAC impede acesso cruzado e não vaza recursos entre residências',async()=>{
@@ -48,6 +57,8 @@ test('RBAC impede acesso cruzado e não vaza recursos entre residências',async(
   assert.equal(ownDevices.status,200);assert.deepEqual(ownDevices.body,[]);
   const forbiddenDashboard=await stranger.agent.get(`/api/v1/homes/${owner.home.id}/dashboard`);
   assert.equal(forbiddenDashboard.status,403);
+  const forbiddenFloorplan=await stranger.agent.put(`/api/v1/homes/${owner.home.id}/floorplan`).send({floors:{}});
+  assert.equal(forbiddenFloorplan.status,403);
 });
 
 test('entradas inválidas e recurso de outra casa são rejeitados',async()=>{
