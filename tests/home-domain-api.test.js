@@ -69,6 +69,14 @@ test('entradas inválidas e recurso de outra casa são rejeitados',async()=>{
   const otherRoom=(await second.agent.get(`/api/v1/homes/${second.home.id}/rooms`)).body[0];
   const crossRoom=await first.agent.post(`/api/v1/homes/${first.home.id}/devices`).send({name:'Tentativa cruzada',roomId:otherRoom.id,room:'Inexistente',type:'plug'});
   assert.equal(crossRoom.status,400);
+  const room=(await first.agent.get(`/api/v1/homes/${first.home.id}/rooms`)).body[0];
+  const offline=await first.agent.post(`/api/v1/homes/${first.home.id}/devices`).send({name:'Tomada offline',roomId:room.id,type:'plug',online:false,power:false});
+  const blocked=await first.agent.patch(`/api/v1/homes/${first.home.id}/devices/${offline.body.id}`).send({power:true,version:offline.body.version,requestId:'offline-command'});
+  assert.equal(blocked.status,409);assert.equal(blocked.body.code,'DEVICE_OFFLINE');
+  const preserved=(await first.agent.get(`/api/v1/homes/${first.home.id}/devices`)).body.find(item=>item.id===offline.body.id);
+  assert.equal(preserved.power,false);assert.equal(preserved.version,offline.body.version);
+  const crossDevice=await second.agent.patch(`/api/v1/homes/${first.home.id}/devices/${offline.body.id}`).send({power:true,version:offline.body.version});
+  assert.equal(crossDevice.status,403);
 });
 
 test('CRUD versionado da estrutura audita alterações e rejeita versões antigas',async()=>{

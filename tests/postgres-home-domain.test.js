@@ -20,12 +20,14 @@ test('migrations persistem e segregam o domínio residencial no PostgreSQL',{ski
   const room=await identity.createRoom({floorId:floor.id,name:'Sala',position:0});
   const created=await repository.saveDevice(home.id,{name:'Luz persistida',type:'light',roomId:room.id,externalId:`qa-${suffix}`,power:true,brightness:70,x:20,y:30});
   assert.equal(created.room,'Sala');assert.equal(created.power,true);assert.equal(created.version,1);
+  const failed=await repository.saveDevice(home.id,{name:'Sensor com erro',type:'sensor',roomId:room.id,externalId:`qa-error-${suffix}`,status:'error'});
+  assert.equal(failed.status,'error');assert.equal(failed.error,true);assert.equal(failed.online,false);
   const changed=await repository.updateDevice(home.id,created.id,{name:'Luz versionada',version:created.version});assert.equal(changed.version,2);
   assert.equal(await repository.updateDevice(home.id,created.id,{name:'Versão antiga',version:created.version}),false);
   assert.equal(await repository.saveDevice(home.id,{name:'Duplicado',type:'light',roomId:room.id,externalId:`qa-${suffix}`}),false);
   const renamedHome=await identity.updateHome(home.id,{name:'Casa PostgreSQL versionada',version:home.version});assert.equal(renamedHome.version,2);
   assert.equal(await identity.updateHome(home.id,{name:'Versão antiga',version:home.version}),false);
-  assert.equal((await repository.listDevices(home.id)).length,1);
+  assert.equal((await repository.listDevices(home.id)).length,2);
   assert.equal((await repository.listDevices(other.id)).length,0);
   const scene=await repository.saveScene(home.id,{name:'Cena PostgreSQL',actions:[{deviceId:created.id,controls:{power:false}}]});
   await repository.saveAutomation(home.id,{name:'Automação PostgreSQL',sceneId:scene.id,trigger:{type:'manual'},conditions:[],enabled:true});

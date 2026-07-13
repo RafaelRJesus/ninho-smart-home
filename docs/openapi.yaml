@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.5.0
+  version: 1.6.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -114,14 +114,16 @@ paths:
   /homes/{homeId}/devices/{deviceId}:
     patch:
       operationId: updateDevice
+      description: Atualiza metadados ou envia controles. Controles aguardam confirmação do provedor antes de persistir; falhas preservam o estado anterior. `requestId` correlaciona a tentativa sem expor detalhes do provedor.
       security: [{ cookieAuth: [] }]
       parameters:
         - { $ref: '#/components/parameters/HomeId' }
         - { name: deviceId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
-        '200': { description: Dispositivo atualizado }
+        '200': { description: Dispositivo atualizado com estado final confirmado pelo backend }
         '404': { description: Dispositivo não encontrado na residência }
-        '409': { $ref: '#/components/responses/VersionConflict' }
+        '409': { description: Versão conflitante, dispositivo offline ou dispositivo em erro }
+        '502': { description: O provedor não confirmou o comando; estado anterior preservado }
     delete:
       operationId: deleteDevice
       security: [{ cookieAuth: [] }]
