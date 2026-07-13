@@ -21,7 +21,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 05 | Planta visual | **Concluído** | 2026-07-13 |
 | 06 | Dispositivos na planta | **Concluído** | 2026-07-13 |
 | 07 | Controles avançados | **Concluído** | 2026-07-13 |
-| 08 | Edição e camadas | Parcial | 2026-07-10 |
+| 08 | Edição e camadas | **Concluído** | 2026-07-13 |
 | 09 | Cenas e automações | Parcial avançado | 2026-07-10 |
 | 10 | Notificações e energia | Parcial | 2026-07-10 |
 | 11 | Segurança e LGPD | Parcial avançado | 2026-07-10 |
@@ -130,9 +130,12 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Modo de edição, reposicionamento e camadas iniciais.
 - [x] Comandos bloqueados durante a edição.
-- [ ] Desenho e ajuste geométrico dos cômodos.
-- [ ] Versionamento e restauração da planta.
-- [ ] Alerta de alterações não salvas.
+- [x] Desenho e ajuste geométrico dos cômodos.
+- [x] Versionamento e restauração da planta em memória e PostgreSQL.
+- [x] Alerta de alterações não salvas ao trocar de piso, tela ou fechar o navegador.
+- [x] Camadas de temperatura, energia, câmeras e segurança ativáveis individualmente.
+- [x] Controle otimista de concorrência, RBAC administrativo e auditoria de restauração.
+- [x] Gate DEV e QA aprovados no PR #11: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 09 — Cenas e automações
 
