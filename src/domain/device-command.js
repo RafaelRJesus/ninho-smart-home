@@ -1,4 +1,5 @@
-export const isDeviceControl = patch => ['power', 'brightness', 'temperature'].some(key => patch?.[key] !== undefined);
+export const controlKeys=['power','brightness','temperature','color','volume','mediaAction','locked','position','cameraAction'];
+export const isDeviceControl = patch => controlKeys.some(key => patch?.[key] !== undefined);
 
 export function pendingDevice(device, patch, requestId) {
   return { ...device, ...patch, commandStatus: 'pending', commandRequestId: requestId, commandError: null };
