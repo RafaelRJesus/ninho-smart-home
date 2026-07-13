@@ -33,6 +33,10 @@ function App({user,home,onLogout}) {
   const [query, setQuery] = useState('');
   const [roomFilter, setRoomFilter] = useState('Todos');
   const [activity, setActivity] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState('');
+  const [dashboardRevision, setDashboardRevision] = useState(0);
   const [theme, setTheme] = useState(() => localStorage.getItem('ninho-theme') || 'dark');
 
   const receiveEvent = useCallback(event => {
@@ -40,13 +44,16 @@ function App({user,home,onLogout}) {
     const label = event.type === 'device.created' ? `${event.payload.name} foi adicionado` : `${event.payload.name} foi atualizado`;
     setActivity(items => [{ id: event.id, text: label, time: new Date(event.occurredAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }, ...items].slice(0, 10));
     setDevices(items => items.map(device => device.id === event.payload.deviceId ? { ...device, ...event.payload, id: device.id } : device));
+    setDashboardRevision(value=>value+1);
   }, []);
   const realtime = useRealtime(receiveEvent,`${API}/events`);
 
   function notify(text,type='info'){const id=Date.now()+Math.random();setToasts(items=>[...items,{id,text,type}]);setTimeout(()=>setToasts(items=>items.filter(item=>item.id!==id)),4500)}
   const load = async (mode=status.mode) => { setLoading(true); try { const r=await fetch(`${API}/devices`); const data=await r.json(); if(!r.ok)throw new Error(data.error||'Não foi possível carregar os dispositivos.'); setDevices(data);setConnection(mode==='demo'?'demo':'connected');setLastSync(new Date());return data } catch(error){setConnection('error');notify(error.message,'error');return []} finally{setLoading(false)} };
   const loadRooms = () => fetch(`${API}/rooms`).then(r => r.json()).then(setRooms);
+  const loadDashboard = useCallback(async()=>{setDashboardLoading(true);setDashboardError('');try{const response=await fetch(`${API}/dashboard`);const result=await response.json();if(!response.ok)throw new Error(result.message||result.error||'Falha ao carregar o dashboard.');setDashboard(result);}catch(error){setDashboardError(error.message);}finally{setDashboardLoading(false)}},[API]);
   useEffect(() => { loadRooms(); fetch(`${API}/status`).then(r=>r.json()).then(data=>{setStatus(data);load(data.mode)}); }, []);
+  useEffect(()=>{loadDashboard()},[loadDashboard,dashboardRevision]);
   useEffect(() => { document.documentElement.dataset.theme=theme; localStorage.setItem('ninho-theme',theme); }, [theme]);
   const active = devices.filter(d => d.power).length;
   const filteredDevices = devices.filter(device => (roomFilter==='Todos'||device.room===roomFilter) && `${device.name} ${device.room}`.toLowerCase().includes(query.toLowerCase()));
@@ -60,6 +67,7 @@ function App({user,home,onLogout}) {
       const changed = await r.json();
       if (!r.ok) throw new Error(changed.error);
       setDevices(ds => ds.map(d => d.id === id ? changed : d)); setSelected(current => current?.id === id ? changed : current);
+      setDashboardRevision(value=>value+1);
       notify(`${changed.name}: alteração salva.`,'success');
     } catch (error) { notify(error.message,'error'); }
   }
@@ -99,7 +107,7 @@ function App({user,home,onLogout}) {
       {view === 'dashboard' && <>
         <section className="hero"><div><div className="ai-label"><Sparkles size={15}/> ASSISTENTE NINHO</div><h2>O que você gostaria de fazer?</h2><p>Controle sua casa naturalmente, por voz ou texto.</p><div className="command"><button aria-label="Comando de voz" className={listening ? 'recording' : ''} onClick={listen}><Mic/></button><input disabled={busy} value={command} onChange={e=>setCommand(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder={busy?'Executando comando...':'Ex: Apague as luzes da sala...'}/><button aria-label="Enviar comando" disabled={busy} onClick={()=>send()}>{busy?<RefreshCw className="spin"/>:<Send/>}</button></div><div className="suggestions">{['Acender luz da sala','Ar em 22 graus','Desligar tudo'].map(x=><button key={x} onClick={()=>send(x)}>{x}</button>)}</div>{messages.at(-1)?.from==='ai'&&<div className="assistant-reply"><Sparkles/>{messages.at(-1).text}</div>}</div><div className="orb"><Sparkles size={38}/></div></section>
         <div className="stats"><article><span><Power/></span><div><b>{active}</b><small>Dispositivos ativos</small></div></article><article><span><Thermometer/></span><div><b>{temperature ? `${temperature}°C` : '—'}</b><small>Temperatura interna</small></div></article><article><span><Home/></span><div><b>{rooms.length}</b><small>Ambientes</small></div></article></div>
-        <OperationalDashboard devices={devices} connection={connection} realtime={realtime} activity={activity}/>
+        <OperationalDashboard data={dashboard} loading={dashboardLoading} error={dashboardError} connection={connection} realtime={realtime} sessionActivity={activity} onRetry={()=>{load();loadDashboard()}} update={update}/>
         <div className="section-title"><div><h2>Seus dispositivos</h2><p>{lastSync?`Atualizado às ${lastSync.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:'Controle rápido dos seus aparelhos'}</p></div><button className="link" onClick={()=>setView('plant')}>Ver na planta →</button></div>
         <div className="device-tools"><label><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar dispositivo..."/></label><div className="room-filters"><button className={roomFilter==='Todos'?'active':''} onClick={()=>setRoomFilter('Todos')}>Todos</button>{rooms.map(room=><button key={room.id} className={roomFilter===room.name?'active':''} onClick={()=>setRoomFilter(room.name)}>{room.name}</button>)}</div></div>
         {loading?<DeviceSkeleton/>:filteredDevices.length?<div className="devices">{filteredDevices.map(d=><DeviceCard key={d.id} d={d} update={update} select={setSelected}/>)}</div>:<EmptyState hasQuery={Boolean(query||roomFilter!=='Todos')} clear={()=>{setQuery('');setRoomFilter('Todos')}} sync={load}/>} 
