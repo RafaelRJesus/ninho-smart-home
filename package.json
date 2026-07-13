@@ -2,7 +2,7 @@
   "name": "casa-ia-tuya",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
     "dev:web": "vite",

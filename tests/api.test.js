@@ -16,6 +16,15 @@ test('health público e API v1 protegida respondem',async()=>{
   assert.equal(health.body.ok,true);assert.equal(protectedRoute.status,401);assert.equal(protectedRoute.body.code,'AUTHENTICATION_REQUIRED');
 });
 
+test('versão pública identifica release, ambiente e build sem expor configuração',async()=>{
+  const response=await request(app).get('/api/version');
+  assert.equal(response.status,200);
+  assert.match(response.body.version,/^\d+\.\d+\.\d+$/);
+  assert.equal(response.body.environment,'test');
+  assert.ok(['name','version','environment','commit','builtAt'].every(key=>Object.hasOwn(response.body,key)));
+  assert.equal(response.body.AUTH_SECRET,undefined);
+});
+
 test('sessão usa cookies HttpOnly e não devolve token ao JavaScript',()=>{
   assert.equal(registration.body.accessToken,undefined);
   const cookies=registration.headers['set-cookie'];
