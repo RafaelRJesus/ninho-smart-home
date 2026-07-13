@@ -59,7 +59,7 @@ export function createApp(){
   const app=express();
   app.disable('x-powered-by');
   if(process.env.TRUST_PROXY==='true')app.set('trust proxy',1);
-  app.use(express.json({limit:'100kb'}));
+  app.use((req,res,next)=>express.json({limit:req.method==='PUT'&&/\/floorplan$/.test(req.path)?'3mb':'100kb'})(req,res,next));
   app.use(requestContext);
   app.use(securityHeaders);
   app.use(requireHttps);
