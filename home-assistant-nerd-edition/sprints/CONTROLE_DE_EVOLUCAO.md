@@ -22,7 +22,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 06 | Dispositivos na planta | **Concluído** | 2026-07-13 |
 | 07 | Controles avançados | **Concluído** | 2026-07-13 |
 | 08 | Edição e camadas | **Concluído** | 2026-07-13 |
-| 09 | Cenas e automações | Parcial avançado | 2026-07-10 |
+| 09 | Cenas e automações | **Concluído** | 2026-07-13 |
 | 10 | Notificações e energia | Parcial | 2026-07-10 |
 | 11 | Segurança e LGPD | Parcial avançado | 2026-07-10 |
 | 12 | Resiliência e observabilidade | Parcial | 2026-07-10 |
@@ -146,7 +146,8 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [x] Detecção e alerta de conflitos, ciclos diretos e indiretos entre automações.
 - [x] Persistência PostgreSQL por residência das regras, alertas e execuções idempotentes.
 - [x] Gate DEV e QA aprovados no PR #12: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
-- [ ] Regressão em `main` e deploy de produção validados.
+- [x] Regressão em `main` aprovada e deploy `fbf4914` validado como Live no Render em 2026-07-13.
+- [x] Release `0.9.0`, ambiente e commit curto identificáveis na interface e em `/api/version` (PR #13).
 
 ## Sprint 10 — Notificações e energia
 
