@@ -17,7 +17,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 01 | Identidade e layout | **Concluído** | 2026-07-11 |
 | 02 | Estrutura da casa | **Concluído** | 2026-07-11 |
 | 03 | Integrações | **Concluído** | 2026-07-11 |
-| 04 | Dashboard | Parcial | 2026-07-10 |
+| 04 | Dashboard | **Concluído** | 2026-07-13 |
 | 05 | Planta visual | Parcial | 2026-07-10 |
 | 06 | Dispositivos na planta | Parcial | 2026-07-10 |
 | 07 | Controles avançados | Parcial | 2026-07-10 |
@@ -84,9 +84,12 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Visão operacional, dispositivos, clima, energia e atividade.
 - [x] Atualização por SSE sem recarregar a página.
-- [ ] Cards completos de segurança, internet e câmeras.
-- [ ] Teste automatizado do carregamento inicial em até três segundos.
-- [ ] Estados loading, vazio, erro e offline em todos os blocos.
+- [x] Cards completos de segurança, internet e câmeras.
+- [x] Teste automatizado do carregamento inicial em até três segundos em desktop e mobile.
+- [x] Estados loading, vazio, erro e offline em todos os blocos.
+- [x] Snapshot agregado no backend, protegido por autenticação e RBAC residencial.
+- [x] Luzes, gráfico de energia, automações recentes, auditoria e informações do sistema no cockpit.
+- [x] Gate DEV e QA aprovados no PR #7: unitários, integração, PostgreSQL, E2E, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 05 — Planta baixa: visualização
 
