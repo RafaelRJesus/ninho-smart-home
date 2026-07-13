@@ -27,6 +27,7 @@ import { EmailSender } from './infrastructure/email-sender.js';
 import { HomeIntegrationService } from './application/home-integration-service.js';
 import { DashboardService } from './application/dashboard-service.js';
 import { OrchestrationService } from './application/orchestration-service.js';
+import { buildInfo } from './core/build-info.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tuyaConfigured = Boolean(process.env.TUYA_ACCESS_ID && process.env.TUYA_ACCESS_SECRET);
@@ -62,6 +63,7 @@ export function createApp(){
   app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300),skip:req=>req.path.startsWith('/health')}));
   app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
   app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,orchestration,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
+  app.get('/api/version',(_req,res)=>res.json(buildInfo));
   app.get('/api/health',(_req,res)=>res.json({ok:true,uptime:Math.round(process.uptime()),timestamp:new Date().toISOString()}));
   app.get('/api/health/live',(_req,res)=>res.json({status:'alive'}));
   app.get('/api/health/ready',async(_req,res)=>{const integrations=await providers.health();const degraded=Object.values(integrations).some(item=>item?.status==='unavailable');res.status(degraded?503:200).json({status:degraded?'degraded':'ready',integrations});});
