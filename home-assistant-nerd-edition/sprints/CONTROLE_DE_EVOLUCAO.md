@@ -20,7 +20,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 04 | Dashboard | **Concluído** | 2026-07-13 |
 | 05 | Planta visual | **Concluído** | 2026-07-13 |
 | 06 | Dispositivos na planta | **Concluído** | 2026-07-13 |
-| 07 | Controles avançados | Parcial | 2026-07-10 |
+| 07 | Controles avançados | **Concluído** | 2026-07-13 |
 | 08 | Edição e camadas | Parcial | 2026-07-10 |
 | 09 | Cenas e automações | Parcial avançado | 2026-07-10 |
 | 10 | Notificações e energia | Parcial | 2026-07-10 |
@@ -117,9 +117,14 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Energia, brilho e temperatura conforme capacidade.
 - [x] PIN disponível para ações críticas.
-- [ ] Cor de iluminação e controles completos de mídia.
-- [ ] Câmeras, fechaduras e portões com permissões específicas.
-- [ ] Confirmação visual obrigatória de ações críticas.
+- [x] Cor de iluminação e controles completos de mídia.
+- [x] Câmeras, fechaduras e portões protegidos por RBAC administrativo.
+- [x] Confirmação visual e PIN obrigatórios para ações críticas.
+- [x] Capacidades normalizadas nos adaptadores Home Assistant e Tuya.
+- [x] Valores inválidos e capacidades ausentes rejeitados sem mutação persistida.
+- [x] Estados avançados persistidos em memória e PostgreSQL.
+- [x] Auditoria crítica sem armazenamento ou exposição do PIN.
+- [x] Gate DEV e QA aprovados no PR #10: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 08 — Edição da planta e camadas
 
