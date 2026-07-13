@@ -19,7 +19,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 03 | Integrações | **Concluído** | 2026-07-11 |
 | 04 | Dashboard | **Concluído** | 2026-07-13 |
 | 05 | Planta visual | **Concluído** | 2026-07-13 |
-| 06 | Dispositivos na planta | Parcial | 2026-07-10 |
+| 06 | Dispositivos na planta | **Concluído** | 2026-07-13 |
 | 07 | Controles avançados | Parcial | 2026-07-10 |
 | 08 | Edição e camadas | Parcial | 2026-07-10 |
 | 09 | Cenas e automações | Parcial avançado | 2026-07-10 |
@@ -106,9 +106,12 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Posicionamento, ícones, seleção e painel contextual.
 - [x] Estados ligado, desligado e offline.
-- [ ] Estado visual de erro dedicado.
-- [ ] Confirmação assíncrona do estado final pelo backend.
-- [ ] Restauração visual automática quando o comando falhar.
+- [x] Estado visual de erro dedicado, acessível por texto, ícone e forma.
+- [x] Confirmação assíncrona do estado final pelo backend e provedor.
+- [x] Restauração visual automática quando o comando falhar, com nova tentativa.
+- [x] Bloqueio de comandos para dispositivos offline ou em erro sem mutação persistida.
+- [x] Persistência dos estados online, offline e erro no PostgreSQL.
+- [x] Gate DEV e QA aprovados no PR #9: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga, segredos e CodeQL.
 
 ## Sprint 07 — Controles avançados
 

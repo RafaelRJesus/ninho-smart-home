@@ -53,9 +53,16 @@ Entregar o escopo desta etapa com qualidade, rastreabilidade e capacidade de val
 
 ## Definition of Done
 
-- [ ] Código revisado.
-- [ ] Pipeline aprovado.
-- [ ] Critérios de aceite atendidos.
-- [ ] Documentação atualizada.
-- [ ] Deploy em QA concluído.
-- [ ] Aprovação de QA registrada.
+- [x] Código revisado.
+- [x] Pipeline aprovado.
+- [x] Critérios de aceite atendidos.
+- [x] Documentação atualizada.
+- [x] Deploy em QA concluído.
+- [x] Aprovação de QA registrada.
+
+## Evidências
+
+- Gate DEV aprovado na branch `feat/sprint-06-floorplan-devices`.
+- Gate QA aprovado no PR #9: unitários, integração, PostgreSQL, E2E desktop/mobile, build, smoke, carga concorrente, auditoria de dependências, segredos e CodeQL.
+- Contrato HTTP documentado em `docs/openapi.yaml`.
+- Regressões de domínio, API, PostgreSQL e interface cobertas em `tests/`.
