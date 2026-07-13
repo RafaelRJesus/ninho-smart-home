@@ -113,6 +113,9 @@ export function normalizedStatusValue(status, functions, codes, fallback, proper
 
 export function inferType(category = '', functions = []) {
   const codes = functions.map(item => item.code);
+  if (codes.some(code => /unlock|lock_motor|switch_lock/.test(code)) || /ms|jtms/.test(category)) return 'lock';
+  if (codes.some(code => /percent_control|position/.test(code)) || /cl|ckmkzq/.test(category)) return 'cover';
+  if (codes.some(code => /basic_private|ipc/.test(code)) || /sp|ipc/.test(category)) return 'camera';
   if (codes.some(code => /temp_set|temp_current/.test(code)) || /kt|wk/.test(category)) return 'ac';
   if (codes.some(code => /bright|colour|switch_led/.test(code)) || /dj|xdd|fwl/.test(category)) return 'light';
   if (/tv|ykq/.test(category)) return 'tv';
@@ -121,11 +124,8 @@ export function inferType(category = '', functions = []) {
 
 export function commandFor(functions, property, value) {
   const codes = functions.map(item => item.code);
-  const candidates = property === 'power'
-    ? ['switch_led', 'switch_1', 'switch', 'switch_power', 'power']
-    : property === 'brightness'
-      ? ['bright_value_v2', 'bright_value', 'brightness', 'bright']
-      : ['temp_set', 'temp_set_f', 'temperature'];
+  const aliases={power:['switch_led','switch_1','switch','switch_power','power'],brightness:['bright_value_v2','bright_value','brightness','bright'],temperature:['temp_set','temp_set_f','temperature'],color:['colour_data_v2','colour_data','color_data'],volume:['volume_set','volume'],mediaAction:['play_control','media_control'],locked:['switch_lock','lock_motor_state','unlock'],position:['percent_control','position'],cameraAction:['basic_private','privacy']};
+  const candidates = aliases[property]||[];
   const code = candidates.find(candidate => codes.includes(candidate));
   if (!code) throw new Error(`O aparelho não oferece o controle “${property}” pela API Tuya.`);
   const definition = functions.find(item => item.code === code);
@@ -143,5 +143,9 @@ export function commandFor(functions, property, value) {
       normalized = Math.round(Number(value) / Number(spec?.scale ? 10 ** -spec.scale : 1));
     } catch { normalized = Number(value); }
   }
+  if(property==='color'){
+    const [r,g,b]=String(value).slice(1).match(/../g).map(item=>parseInt(item,16)/255);const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;let h=0;if(delta){if(max===r)h=60*(((g-b)/delta)%6);else if(max===g)h=60*((b-r)/delta+2);else h=60*((r-g)/delta+4);}if(h<0)h+=360;normalized=JSON.stringify({h:Math.round(h),s:Math.round(max?delta/max*1000:0),v:Math.round(max*1000)});
+  }
+  if(property==='cameraAction')normalized=value==='privacy_on';
   return { code, value: normalized };
 }
