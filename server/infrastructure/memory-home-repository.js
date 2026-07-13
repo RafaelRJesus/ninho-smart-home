@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 const clone=value=>structuredClone(value);
-const initial=()=>({devices:[],floorplan:{content:{floors:{}},version:1,updatedAt:new Date().toISOString()},floorplanVersions:[],scenes:[],automations:[],notifications:[],energyReadings:[],energySettings:{tariff:null,currency:'BRL'}});
+const initial=()=>({devices:[],floorplan:{content:{floors:{}},version:1,updatedAt:new Date().toISOString()},floorplanVersions:[],scenes:[],automations:[],orchestrationExecutions:[],notifications:[],energyReadings:[],energySettings:{tariff:null,currency:'BRL'}});
 
 export class MemoryHomeRepository {
   constructor(){this.homes=new Map();}
@@ -20,8 +20,12 @@ export class MemoryHomeRepository {
   async saveScene(homeId,input){const state=this.state(homeId);const current=state.scenes.find(item=>item.id===input.id);const scene={...input,id:input.id||crypto.randomUUID(),homeId,updatedAt:new Date().toISOString(),createdAt:current?.createdAt||new Date().toISOString()};if(current)Object.assign(current,scene);else state.scenes.push(scene);return clone(current||scene);}
   async deleteScene(homeId,id){const state=this.state(homeId);const index=state.scenes.findIndex(item=>item.id===id);if(index<0)return false;state.scenes.splice(index,1);return true;}
   async listAutomations(homeId){return clone(this.state(homeId).automations);}
+  async listAutomationHomeIds(){return [...this.homes].filter(([,state])=>state.automations.some(item=>item.enabled)).map(([homeId])=>homeId);}
   async saveAutomation(homeId,input){const state=this.state(homeId);const current=state.automations.find(item=>item.id===input.id);const automation={...input,id:input.id||crypto.randomUUID(),homeId,createdAt:current?.createdAt||new Date().toISOString()};if(current)Object.assign(current,automation);else state.automations.push(automation);return clone(current||automation);}
   async deleteAutomation(homeId,id){const state=this.state(homeId);const index=state.automations.findIndex(item=>item.id===id);if(index<0)return false;state.automations.splice(index,1);return true;}
+  async claimOrchestrationExecution(homeId,input){const state=this.state(homeId);if(state.orchestrationExecutions.some(item=>item.executionId===input.executionId))return false;const value={...input,homeId,status:'running',results:[],createdAt:new Date().toISOString(),finishedAt:null};state.orchestrationExecutions.push(value);return clone(value);}
+  async finishOrchestrationExecution(homeId,executionId,patch){const value=this.state(homeId).orchestrationExecutions.find(item=>item.executionId===executionId);if(!value)return null;Object.assign(value,patch,{finishedAt:new Date().toISOString()});return clone(value);}
+  async listOrchestrationExecutions(homeId){return clone(this.state(homeId).orchestrationExecutions);}
   async listNotifications(homeId){return clone(this.state(homeId).notifications);}
   async addNotification(homeId,input){const value={id:input.id||crypto.randomUUID(),homeId,readAt:null,createdAt:new Date().toISOString(),...input};this.state(homeId).notifications.unshift(value);return clone(value);}
   async readNotification(homeId,id){const value=this.state(homeId).notifications.find(item=>item.id===id);if(!value)return null;value.readAt=new Date().toISOString();return clone(value);}
