@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ninho API
-  version: 1.7.0
+  version: 1.8.0
   description: API residencial versionada, autenticada por cookies HttpOnly e segregada por RBAC.
 servers:
   - url: /api/v1
@@ -174,13 +174,64 @@ paths:
         '200': { description: Planta e versão atuais }
     put:
       operationId: saveFloorplan
-      description: Persiste fundos PNG, JPEG, WebP ou SVG seguro de até 2 MB por piso. Scripts e referências externas em SVG são rejeitados.
+      description: Persiste uma nova versão da planta com geometria dos cômodos e fundos seguros. Exige controle otimista pela versão atual.
       security: [{ cookieAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, content]
+              properties:
+                version: { type: integer, minimum: 1 }
+                content:
+                  type: object
+                  required: [floors]
+                  properties:
+                    floors:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          background: { nullable: true, type: object }
+                          rooms:
+                            type: object
+                            additionalProperties:
+                              type: object
+                              required: [x, y, width, height]
+                              properties:
+                                x: { type: number, minimum: 0, maximum: 100 }
+                                y: { type: number, minimum: 0, maximum: 100 }
+                                width: { type: number, minimum: 5, maximum: 100 }
+                                height: { type: number, minimum: 5, maximum: 100 }
       responses:
         '200': { description: Nova versão da planta persistida }
         '400': { description: Estrutura, piso, tipo, tamanho ou conteúdo SVG inválido }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+  /homes/{homeId}/floorplan/versions:
+    get:
+      operationId: listFloorplanVersions
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/HomeId' }]
+      responses:
+        '200': { description: Histórico de versões em ordem decrescente }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /homes/{homeId}/floorplan/versions/{version}/restore:
+    post:
+      operationId: restoreFloorplanVersion
+      description: Restaura um snapshot como nova versão e preserva o estado substituído no histórico.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/HomeId' }
+        - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: Snapshot restaurado em uma nova versão }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Versão não encontrada }
+        '409': { $ref: '#/components/responses/VersionConflict' }
   /homes/{homeId}/scenes:
     get:
       operationId: listScenes
