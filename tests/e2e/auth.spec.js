@@ -123,3 +123,16 @@ test('painel mostra apenas capacidades suportadas e confirma ação crítica com
   await expect(page.getByRole('button',{name:'Destrancar fechadura'})).toBeVisible();await expect(page.getByRole('button',{name:'Ligar'})).toHaveCount(0);await expect(page.getByLabel('Cor da iluminação')).toHaveCount(0);
   await page.getByRole('button',{name:'Destrancar fechadura'}).click();await expect(page.getByRole('alertdialog',{name:'Confirmar ação crítica'})).toBeVisible();await expect(page.getByRole('button',{name:'Confirmar com PIN'})).toBeDisabled();await page.getByLabel('PIN de segurança').fill('7419');await page.getByRole('button',{name:'Confirmar com PIN'}).click();await expect(page.getByRole('button',{name:'Trancar fechadura'})).toBeVisible();
 });
+
+test('editor salva geometria, alerta rascunho, alterna camadas e restaura versão',async({page},testInfo)=>{
+  const email=`edit-${testInfo.project.name[0]}-${Date.now()}@ninho.local`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();await page.getByLabel('Seu nome').fill('Editor da planta');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-editor-planta');await page.getByRole('button',{name:'Criar conta segura'}).click();await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  await page.getByRole('button',{name:'Minha planta'}).click();await page.getByRole('button',{name:'Adicionar'}).click();await page.getByLabel('Nome').fill('Clima da sala');await page.getByLabel('Tipo').selectOption('ac');await page.getByRole('button',{name:'Adicionar à planta'}).click();await page.getByRole('button',{name:'Editar planta'}).click();
+  const room=page.getByRole('button',{name:/SALA/});const box=await room.boundingBox();await room.dispatchEvent('pointerdown',{pointerId:7,clientX:box.x+20,clientY:box.y+20});await page.locator('.floorplan-viewport').dispatchEvent('pointermove',{pointerId:7,clientX:box.x+50,clientY:box.y+40});await page.locator('.floorplan-viewport').dispatchEvent('pointerup',{pointerId:7,clientX:box.x+50,clientY:box.y+40});
+  await expect(page.getByRole('status',{name:''}).filter({hasText:'Alterações não salvas'})).toBeVisible();await expect(page.getByRole('button',{name:/Clima da sala/})).toHaveAttribute('aria-disabled','true');
+  page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Visão geral'}).click();await expect(page.getByRole('heading',{name:/Planta da casa/})).toBeVisible();
+  await page.getByRole('button',{name:'Salvar versão'}).click();await expect(page.getByText('Alterações não salvas')).toHaveCount(0);
+  await page.getByRole('button',{name:'Configurar camadas'}).click();await page.getByLabel('Energia').check();await expect(page.getByText('Sem consumo')).toBeVisible();await page.getByLabel('Energia').uncheck();await expect(page.getByText('Sem consumo')).toHaveCount(0);
+  await page.getByRole('button',{name:'Versões'}).click();await expect(page.getByLabel('Histórico da planta')).toContainText('v2');await expect(page.getByLabel('Histórico da planta')).toContainText('v1');
+  page.once('dialog',dialog=>dialog.accept());await page.getByLabel('Histórico da planta').getByRole('button',{name:'Restaurar'}).last().click();await expect(page.getByText('Versão 1 restaurada.')).toBeVisible();
+});
