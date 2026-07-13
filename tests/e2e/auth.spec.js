@@ -99,3 +99,17 @@ test('gesto mobile de dois dedos altera o zoom e respeita os limites',async({pag
   const viewport=page.locator('.floorplan-viewport');await viewport.dispatchEvent('pointerdown',{pointerId:1,pointerType:'touch',clientX:120,clientY:200});await viewport.dispatchEvent('pointerdown',{pointerId:2,pointerType:'touch',clientX:220,clientY:200});await viewport.dispatchEvent('pointermove',{pointerId:2,pointerType:'touch',clientX:300,clientY:200});
   await expect(page.locator('.floorplan-controls output')).toHaveText('180%');await viewport.dispatchEvent('pointerup',{pointerId:1,pointerType:'touch'});await viewport.dispatchEvent('pointerup',{pointerId:2,pointerType:'touch'});
 });
+
+test('comando na planta mostra pendência, restaura falha e permite tentar novamente',async({page},testInfo)=>{
+  const email=`device-command-${testInfo.project.name}-${Date.now()}@ninho.local`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();
+  await page.getByLabel('Seu nome').fill('Comando E2E');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-comando-e2e');await page.getByRole('button',{name:'Criar conta segura'}).click();await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  const homeId=await page.evaluate(async()=>await (await fetch('/api/v1/homes')).json()).then(homes=>homes[0].id);
+  await page.evaluate(async id=>{const rooms=await (await fetch(`/api/v1/homes/${id}/rooms`)).json();await fetch(`/api/v1/homes/${id}/devices`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Luz da planta',roomId:rooms[0].id,type:'light',power:false,x:35,y:45})});},homeId);
+  await page.reload();await expect(page.getByTestId('dashboard-ready')).toBeVisible();await page.getByRole('button',{name:'Minha planta'}).click();
+  const point=page.getByRole('button',{name:'Luz da planta, desligado'});await expect(point).toBeVisible();await point.click();
+  let attempts=0;await page.route('**/api/v1/homes/*/devices/*',async route=>{if(route.request().method()!=='PATCH'||attempts++>0)return route.continue();await new Promise(resolve=>{setTimeout(resolve,250)});await route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({code:'DEVICE_COMMAND_FAILED',message:'Não foi possível confirmar o comando no dispositivo.'})});});
+  await page.getByRole('button',{name:'Ligar'}).click();await expect(page.getByRole('button',{name:'Confirmando...'})).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar');await expect(page.getByRole('button',{name:'Tentar novamente'})).toBeVisible();await expect(page.locator('.point.error')).toHaveCount(1);
+  await page.getByRole('button',{name:'Tentar novamente'}).click();await expect(page.getByRole('button',{name:'Desligar'})).toBeVisible();await expect(page.locator('.point.on')).toHaveCount(1);
+});
