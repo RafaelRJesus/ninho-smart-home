@@ -32,6 +32,9 @@ test('domínio v1 persiste recursos sob a residência autorizada',async()=>{
   assert.equal(notifications.body.length,1);
   const energy=await agent.get(`/api/v1/homes/${home.id}/energy`);
   assert.equal(energy.body.totalKwh,null);
+  const dashboard=await agent.get(`/api/v1/homes/${home.id}/dashboard`);
+  assert.equal(dashboard.status,200);assert.equal(dashboard.body.devices.total,1);
+  assert.equal(dashboard.body.energy.totalKwh,null);assert.equal(dashboard.body.security.status,'protected');
 });
 
 test('RBAC impede acesso cruzado e não vaza recursos entre residências',async()=>{
@@ -43,6 +46,8 @@ test('RBAC impede acesso cruzado e não vaza recursos entre residências',async(
   assert.equal(forbidden.status,403);assert.equal(forbidden.body.code,'FORBIDDEN');
   const ownDevices=await stranger.agent.get(`/api/v1/homes/${stranger.home.id}/devices`);
   assert.equal(ownDevices.status,200);assert.deepEqual(ownDevices.body,[]);
+  const forbiddenDashboard=await stranger.agent.get(`/api/v1/homes/${owner.home.id}/dashboard`);
+  assert.equal(forbiddenDashboard.status,403);
 });
 
 test('entradas inválidas e recurso de outra casa são rejeitados',async()=>{
