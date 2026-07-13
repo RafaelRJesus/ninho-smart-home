@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 const clone=value=>structuredClone(value);
-const initial=()=>({devices:[],floorplan:{content:{},version:1},scenes:[],automations:[],notifications:[],energyReadings:[],energySettings:{tariff:null,currency:'BRL'}});
+const initial=()=>({devices:[],floorplan:{content:{floors:{}},version:1,updatedAt:new Date().toISOString()},floorplanVersions:[],scenes:[],automations:[],notifications:[],energyReadings:[],energySettings:{tariff:null,currency:'BRL'}});
 
 export class MemoryHomeRepository {
   constructor(){this.homes=new Map();}
@@ -13,7 +13,9 @@ export class MemoryHomeRepository {
   async updateDevice(homeId,id,patch){const current=this.state(homeId).devices.find(item=>item.id===id);if(!current)return null;if(patch.version!==undefined&&current.version!==patch.version)return false;const next={...patch};if(patch.status!==undefined||patch.online!==undefined){next.status=patch.status||(patch.online?'online':'offline');next.error=next.status==='error';next.online=next.status==='online'&&patch.online!==false;}Object.assign(current,next,{version:current.version+1});return clone(current);}
   async deleteDevice(homeId,id,version){const state=this.state(homeId);const index=state.devices.findIndex(item=>item.id===id);if(index<0)return null;if(version!==undefined&&state.devices[index].version!==version)return false;state.devices.splice(index,1);return true;}
   async getFloorplan(homeId){return clone(this.state(homeId).floorplan);}
-  async saveFloorplan(homeId,content){const floorplan=this.state(homeId).floorplan;floorplan.content=clone(content);floorplan.version+=1;return clone(floorplan);}
+  async saveFloorplan(homeId,content,expectedVersion){const state=this.state(homeId);const floorplan=state.floorplan;if(expectedVersion!==undefined&&floorplan.version!==expectedVersion)return false;state.floorplanVersions.unshift({version:floorplan.version,content:clone(floorplan.content),createdAt:floorplan.updatedAt});floorplan.content=clone(content);floorplan.version+=1;floorplan.updatedAt=new Date().toISOString();return clone(floorplan);}
+  async listFloorplanVersions(homeId){const state=this.state(homeId);return clone([{version:state.floorplan.version,content:state.floorplan.content,createdAt:state.floorplan.updatedAt},...state.floorplanVersions]);}
+  async restoreFloorplan(homeId,targetVersion,expectedVersion){const state=this.state(homeId);if(state.floorplan.version!==expectedVersion)return false;const target=(await this.listFloorplanVersions(homeId)).find(item=>item.version===targetVersion);if(!target)return null;return this.saveFloorplan(homeId,target.content,expectedVersion);}
   async listScenes(homeId){return clone(this.state(homeId).scenes);}
   async saveScene(homeId,input){const state=this.state(homeId);const current=state.scenes.find(item=>item.id===input.id);const scene={...input,id:input.id||crypto.randomUUID(),homeId,updatedAt:new Date().toISOString(),createdAt:current?.createdAt||new Date().toISOString()};if(current)Object.assign(current,scene);else state.scenes.push(scene);return clone(current||scene);}
   async deleteScene(homeId,id){const state=this.state(homeId);const index=state.scenes.findIndex(item=>item.id===id);if(index<0)return false;state.scenes.splice(index,1);return true;}
