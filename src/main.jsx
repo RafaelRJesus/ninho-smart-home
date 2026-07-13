@@ -11,6 +11,7 @@ import './design-system/tokens.css';
 import './styles.css';
 
 const homeApi = homeId => `/api/v1/homes/${homeId}`;
+const buildInfo={version:import.meta.env.VITE_APP_VERSION||'0.0.0',environment:import.meta.env.VITE_APP_ENV||'development',commit:import.meta.env.VITE_BUILD_SHA||'local'};
 const icons = { light: Lamp, ac: Thermometer, tv: Tv, plug: PlugZap, lock:LockKeyhole, cover:DoorOpen, camera:Camera };
 
 function DeviceIcon({ type, size = 20 }) { const Icon = icons[type] || PlugZap; return <Icon size={size} />; }
@@ -111,6 +112,7 @@ function App({user,home,onLogout}) {
       </nav>
       <div className="house-state"><div className="state-icon"><Sparkles/></div><b>Casa conectada</b><small>{devices.filter(d => d.online).length} de {devices.length} dispositivos online</small><div className="bar"><i style={{width:`${devices.length ? devices.filter(d=>d.online).length/devices.length*100 : 0}%`}}/></div></div>
       <button className="theme-toggle" onClick={()=>setTheme(value=>value==='dark'?'light':'dark')} aria-label={`Ativar tema ${theme==='dark'?'claro':'escuro'}`}>{theme==='dark'?<Sun/>:<Moon/>}<span>{theme==='dark'?'Tema claro':'Tema escuro'}</span></button>
+      <BuildVersion info={buildInfo}/>
       <div className="profile"><div className="avatar">{user.displayName.slice(0,2).toUpperCase()}</div><div><b>{home?.name||'Minha casa'}</b><small>{user.displayName}</small></div><button aria-label="Sair" onClick={onLogout}><LogOut/></button></div>
     </aside>
 
@@ -139,6 +141,7 @@ function App({user,home,onLogout}) {
 }
 
 function ConnectionBadge({connection,mode}) { const labels={checking:'Verificando...',connected:'Tuya conectado',demo:'Modo demonstração',error:'Falha na conexão'};return <div className={`mode ${connection}`}><i/>{labels[connection]||labels[mode]}</div> }
+function BuildVersion({info}){const environment=({production:'PROD',development:'DEV',test:'TEST'})[info.environment]||String(info.environment).toUpperCase();return <div className="build-version" aria-label={`Versão ${info.version}, ambiente ${environment}, build ${info.commit}`} title={`Ninho ${info.version} · ${environment} · build ${info.commit}`}><span>v{info.version}</span><i aria-hidden="true"/> <b>{environment}</b><code>{info.commit}</code></div>}
 function ToastStack({items,close}) { const icons={success:CheckCircle2,error:AlertCircle,info:Info};return <div className="toast-stack" aria-live="polite">{items.map(item=>{const Icon=icons[item.type]||Info;return <div className={`toast ${item.type}`} key={item.id}><Icon/><span>{item.text}</span><button aria-label="Fechar notificação" onClick={()=>close(item.id)}><X/></button></div>})}</div> }
 function DeviceSkeleton(){return <div className="devices skeletons">{[1,2,3,4].map(x=><div className="device skeleton" key={x}><i/><i/><i/></div>)}</div>}
 function EmptyState({hasQuery,clear,sync}){return <div className="empty-state"><div><PlugZap/></div><h3>{hasQuery?'Nenhum resultado':'Nenhum dispositivo encontrado'}</h3><p>{hasQuery?'Tente outro nome ou ambiente.':'Vincule sua conta Smart Life/Tuya ou sincronize novamente.'}</p><button className="primary" onClick={hasQuery?clear:()=>sync()}>{hasQuery?'Limpar filtros':'Sincronizar dispositivos'}</button></div>}
