@@ -19,6 +19,10 @@ test('cadastro abre dashboard, destaca menu e logout encerra sessão',async({pag
   await page.getByLabel('Senha').fill('senha-e2e-bem-segura');
   await page.getByRole('button',{name:'Criar conta segura'}).click();
   await expect(page.getByRole('heading',{name:/Olá!/})).toBeVisible();
+  await expect(page.getByTestId('dashboard-ready')).toBeVisible();
+  await expect(page.getByText('Segurança',{exact:true})).toBeVisible();
+  await expect(page.getByText('Internet e hubs',{exact:true})).toBeVisible();
+  await expect(page.getByText('Câmeras',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Visão geral'})).toHaveClass(/active/);
   await expect(page.getByRole('button',{name:'Visão geral'})).toHaveAttribute('aria-current','page');
   await page.getByRole('button',{name:'Minha planta'}).click();
@@ -27,6 +31,18 @@ test('cadastro abre dashboard, destaca menu e logout encerra sessão',async({pag
   await expect(page.getByRole('heading',{name:/Planta da casa/})).toBeVisible();
   await page.getByRole('button',{name:'Sair'}).click();
   await expect(page.getByRole('heading',{name:'Bem-vindo de volta'})).toBeVisible();
+});
+
+test('dashboard operacional fica pronto em menos de três segundos em condição normal',async({page},testInfo)=>{
+  const email=`dashboard-${testInfo.project.name}-${Date.now()}@ninho.local`;
+  await page.goto('/');await page.getByRole('button',{name:'Criar minha conta'}).click();
+  await page.getByLabel('Seu nome').fill('Dashboard E2E');await page.getByLabel('E-mail').fill(email);await page.getByLabel('Senha').fill('senha-dashboard-e2e');
+  const started=Date.now();await page.getByRole('button',{name:'Criar conta segura'}).click();
+  await expect(page.getByTestId('dashboard-ready')).toBeVisible({timeout:3000});
+  expect(Date.now()-started).toBeLessThan(3000);
+  await expect(page.getByText('Energia ainda não configurada')).toBeVisible();
+  await expect(page.getByText('Nenhuma luz vinculada')).toBeVisible();
+  await expect(page.getByText('Nenhuma execução recente')).toBeVisible();
 });
 
 test('layout essencial permanece acessível no viewport configurado',async({page})=>{
