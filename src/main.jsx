@@ -113,7 +113,7 @@ function App({user,home,onLogout}) {
         {loading?<DeviceSkeleton/>:filteredDevices.length?<div className="devices">{filteredDevices.map(d=><DeviceCard key={d.id} d={d} update={update} select={setSelected}/>)}</div>:<EmptyState hasQuery={Boolean(query||roomFilter!=='Todos')} clear={()=>{setQuery('');setRoomFilter('Todos')}} sync={load}/>} 
       </>}
 
-      {view === 'plant' && <FloorplanEditor mode={status.mode} devices={devices} rooms={rooms} update={update} select={setSelected} add={()=>status.mode==='tuya'?notify('Adicione o aparelho no Smart Life e clique em Sincronizar.','info'):setAdding(true)} manage={()=>setManagingRooms(true)}/>} 
+      {view === 'plant' && <FloorplanEditor mode={status.mode} devices={devices} rooms={rooms} update={update} select={setSelected} add={()=>status.mode==='tuya'?notify('Adicione o aparelho no Smart Life e clique em Sincronizar.','info'):setAdding(true)} manage={()=>setManagingRooms(true)} apiBase={API} notify={notify}/>}
       {view === 'routines' && <AutomationCenter devices={devices} notify={notify} apiBase={API}/>}
       {view === 'settings' && <SettingsView status={status} connection={connection} deviceCount={devices.length} lastSync={lastSync} reload={load} notify={notify} home={home}/>} 
     </main>
