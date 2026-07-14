@@ -30,7 +30,7 @@
 1. Defina `NINHO_VERSION` com uma versão imutável e execute `docker compose build`.
 2. Execute `docker compose up -d` e aguarde o estado `healthy`.
 3. Valide `/api/health/ready` e os fluxos essenciais.
-4. Faça backup do volume `ninho-data` antes de atualizações. O arquivo `.env` nunca deve entrar na imagem.
+4. Faça backup do PostgreSQL antes de atualizações. O arquivo `.env` nunca deve entrar na imagem.
 
 ## TLS e proxy
 

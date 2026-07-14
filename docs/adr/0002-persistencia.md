@@ -2,15 +2,15 @@
 
 ## Status
 
-Proposto; depende de aprovação da hipótese H2.
+Aceito e implementado.
 
 ## Contexto
 
 O JSON local não suporta integridade, concorrência, migrações, segregação por residência ou auditoria robusta.
 
-## Decisão proposta
+## Decisão
 
-Adotar PostgreSQL com migrações versionadas. Manter um repositório em memória para testes e importar `data/state.json` por migração explícita.
+Adotar PostgreSQL com migrações versionadas como persistência durável. Manter repositórios em memória somente para desenvolvimento sem banco e testes isolados. O armazenamento JSON legado foi descontinuado após a consolidação do domínio residencial.
 
 ## Alternativas
 
