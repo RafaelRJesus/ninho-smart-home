@@ -28,6 +28,16 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 12 | Resiliência e observabilidade | Parcial | 2026-07-10 |
 | 13 | Performance e acessibilidade | Parcial | 2026-07-10 |
 | 14 | Hardening e release | Parcial | 2026-07-10 |
+| 15 | Fundação de segurança | Planejado | — |
+| 16 | Bootstrap e composição | Planejado | — |
+| 17 | Domínio e aplicação de dispositivos | Planejado | — |
+| 18 | Persistência modular | Planejado | — |
+| 19 | API e contratos | Planejado | — |
+| 20 | Fundação do frontend | Planejado | — |
+| 21 | Residência e planta em camadas | Planejado | — |
+| 22 | Orquestração e integrações | Planejado | — |
+| 23 | Energia, notificações e observabilidade | Planejado | — |
+| 24 | Remoção do legado e hardening arquitetural | Planejado | — |
 
 ## Sprint 00 — Fundação e preparação
 
@@ -190,6 +200,78 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 - [ ] Rollback executado em QA com versão imutável.
 - [ ] Monitoramento e alertas ativos.
 - [ ] Aprovação formal de produto, tecnologia e QA.
+
+## Sprint 15 — Fundação de segurança
+
+- [ ] Matriz RBAC centralizada por recurso e ação.
+- [ ] CSRF, validação de origem e CORS por allowlist.
+- [ ] Assistente submetido ao fluxo seguro de comandos.
+- [ ] Produção fail-closed e auditoria sensível completa.
+- [ ] Testes negativos por papel e gates DEV/QA aprovados.
+
+## Sprint 16 — Bootstrap e composição
+
+- [ ] Configuração tipada e validada por ambiente.
+- [ ] Container de dependências separado.
+- [ ] Aplicação HTTP sem efeitos colaterais de importação.
+- [ ] Servidor, workers e shutdown desacoplados e testados.
+
+## Sprint 17 — Domínio e aplicação de dispositivos
+
+- [ ] Domínio puro de dispositivos e capacidades.
+- [ ] Casos de uso e portas para todos os comandos.
+- [ ] Idempotência, criticidade, auditoria e confirmação unificadas.
+- [ ] Interface, voz, texto e automações usando o mesmo fluxo.
+
+## Sprint 18 — Persistência modular
+
+- [ ] Repositórios separados por agregado.
+- [ ] Implementações equivalentes em memória e PostgreSQL.
+- [ ] Unidade de trabalho e rollback transacional.
+- [ ] Produção impedida de usar persistência em memória.
+
+## Sprint 19 — API e contratos
+
+- [ ] Controllers finos e modulares.
+- [ ] Schemas de entrada, saída e erro.
+- [ ] OpenAPI e tipos do frontend sincronizados pelo CI.
+- [ ] Contratos e idempotência cobertos por testes.
+
+## Sprint 20 — Fundação do frontend
+
+- [ ] Estrutura por features e dependências compartilhadas.
+- [ ] Cliente HTTP único com CSRF e refresh coordenado.
+- [ ] Providers de sessão, residência e notificações.
+- [ ] Chamadas `fetch` removidas dos componentes visuais migrados.
+
+## Sprint 21 — Residência e planta em camadas
+
+- [ ] Casas, pisos e cômodos migrados para casos de uso.
+- [ ] Planta, upload, histórico e concorrência migrados.
+- [ ] Features React residenciais e da planta modularizadas.
+- [ ] Segregação e E2E desktop/mobile aprovados.
+
+## Sprint 22 — Orquestração e integrações
+
+- [ ] Cenas e automações desacopladas do HTTP.
+- [ ] Providers externos implementando portas comuns.
+- [ ] Cofre acessível somente no backend autorizado.
+- [ ] Scheduler, outbox, retry e idempotência validados.
+
+## Sprint 23 — Energia, notificações e observabilidade
+
+- [ ] Energia e notificações migradas para casos de uso.
+- [ ] Logs, métricas e tracing ponta a ponta.
+- [ ] Alertas operacionais e runbooks configurados.
+- [ ] Privacidade e segregação da telemetria testadas.
+
+## Sprint 24 — Remoção do legado e hardening arquitetural
+
+- [ ] Caminhos antigos removidos após comprovação de não utilização.
+- [ ] Imports proibidos bloqueados pelo CI.
+- [ ] Regressão, segurança, carga, backup e rollback aprovados.
+- [ ] Arquitetura, contratos e runbooks atualizados.
+- [ ] DEV, QA e produção aprovados.
 
 ## Regra para as próximas entregas
 
