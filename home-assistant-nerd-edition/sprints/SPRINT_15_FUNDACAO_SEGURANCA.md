@@ -27,4 +27,3 @@ Centralizar autenticação e autorização e fechar os riscos prioritários ante
 - [ ] Testes negativos para `guest`, `resident`, `admin` e `owner` aprovados.
 - [ ] Secret scan, auditoria de dependências e CodeQL aprovados.
 - [ ] Gates DEV e QA aprovados.
-

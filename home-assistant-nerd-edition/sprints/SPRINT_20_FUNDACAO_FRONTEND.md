@@ -25,4 +25,3 @@ Separar infraestrutura de interface, sessão, estado e módulos funcionais no Re
 - [ ] Shell e autenticação migrados.
 - [ ] Testes de componentes, sessão e acessibilidade aprovados.
 - [ ] Gates DEV e QA aprovados.
-

@@ -24,4 +24,3 @@ Migrar casas, pisos, cômodos e planta para as novas fronteiras de domínio, apl
 - [ ] Frontend modular correspondente entregue.
 - [ ] Segregação, E2E desktop/mobile e concorrência aprovados.
 - [ ] Gates DEV e QA aprovados.
-
