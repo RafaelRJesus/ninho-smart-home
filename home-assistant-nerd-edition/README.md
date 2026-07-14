@@ -2,14 +2,11 @@
 
 Pacote de especificação técnica para evolução da aplicação de automação residencial.
 
-## Estrutura
+## Estrutura versionada
 
-- `skills/`: instruções especializadas para agentes de IA e desenvolvedores.
-- `requirements/`: requisitos funcionais e não funcionais.
-- `sprints/`: backlog dividido por sprint.
-- `architecture/`: decisões e diretrizes técnicas.
-- `quality/`: estratégia de testes e Definition of Done.
-- `governance/`: riscos, dependências e responsabilidades.
+- `sprints/`: backlog, progresso e evidências divididos por sprint.
+
+As referências internas de arquitetura, governança, qualidade, requisitos e skills são mantidas apenas no ambiente local e não são publicadas no repositório.
 
 ## Princípios
 
