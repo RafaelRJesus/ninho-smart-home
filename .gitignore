@@ -38,6 +38,9 @@ playwright-report
 test-results
 home-assistant-nerd-edition-specs.zip
 
+# Documentação interna: manter somente no ambiente local
+docs/
+
 # Referências técnicas privadas: manter somente o planejamento de sprints no Git.
 home-assistant-nerd-edition/*/
 !home-assistant-nerd-edition/sprints/
