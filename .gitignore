@@ -10,3 +10,8 @@ data/e2e-state.json
 playwright-report
 test-results
 home-assistant-nerd-edition-specs.zip
+
+# Referências técnicas privadas: manter somente o planejamento de sprints no Git.
+home-assistant-nerd-edition/*/
+!home-assistant-nerd-edition/sprints/
+!home-assistant-nerd-edition/sprints/**
