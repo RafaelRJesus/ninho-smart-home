@@ -3,8 +3,6 @@ import assert from 'node:assert/strict';
 import { CircuitBreaker, resilientCall } from '../server/integrations/resilience.js';
 import { ProviderRegistry } from '../server/integrations/provider-registry.js';
 import { HomeAssistantProvider } from '../server/integrations/home-assistant/home-assistant-provider.js';
-import { IntegrationSyncService } from '../server/application/integration-sync-service.js';
-import { MemoryDeviceRepository } from '../server/infrastructure/memory-repositories.js';
 import { MemoryIdentityStore } from '../server/infrastructure/memory-identity-store.js';
 import { MemoryHomeRepository } from '../server/infrastructure/memory-home-repository.js';
 import { CredentialVault } from '../server/security/credential-vault.js';
@@ -21,8 +19,6 @@ test('registry isola health check com falha',async()=>{const methods={connect:as
 test('Home Assistant normaliza entidades e envia serviço',async()=>{const previous=global.fetch;const calls=[];global.fetch=async(url,options={})=>{calls.push({url,options});if(url.endsWith('/api/states'))return new Response(JSON.stringify([{entity_id:'light.sala',state:'on',attributes:{friendly_name:'Luz Sala'},last_updated:'2026-01-01T00:00:00Z'}]),{status:200});return new Response(JSON.stringify([]),{status:200})};try{const provider=new HomeAssistantProvider({baseUrl:'http://ha:8123',token:'secret'});const devices=await provider.listDevices();assert.equal(devices[0].category,'light');assert.equal(devices[0].name,'Luz Sala');await provider.sendCommand({requestId:'r1',deviceId:'ha:light.sala',capability:'power',value:false});assert.ok(calls.at(-1).url.endsWith('/api/services/light/turn_off'));assert.equal(calls[0].options.headers.Authorization,'Bearer secret')}finally{global.fetch=previous}});
 
 test('Home Assistant mapeia cor, mídia e segurança para serviços nativos',async()=>{const previous=global.fetch;const calls=[];global.fetch=async(url,options={})=>{calls.push({url,options});return new Response(JSON.stringify([]),{status:200})};try{const provider=new HomeAssistantProvider({baseUrl:'http://ha:8123',token:'secret'});await provider.sendCommand({requestId:'color',externalId:'light.sala',capability:'color',value:'#00ff80'});assert.match(calls.at(-1).url,/light\/turn_on$/);assert.deepEqual(JSON.parse(calls.at(-1).options.body).rgb_color,[0,255,128]);await provider.sendCommand({requestId:'lock',externalId:'lock.porta',capability:'locked',value:false});assert.match(calls.at(-1).url,/lock\/unlock$/);await provider.sendCommand({requestId:'media',externalId:'media_player.tv',capability:'mediaAction',value:'mute'});assert.equal(JSON.parse(calls.at(-1).options.body).is_volume_muted,true);}finally{global.fetch=previous}});
-
-test('sincronização não duplica dispositivo externo',async()=>{const devices=new MemoryDeviceRepository();const provider={listDevices:async()=>[{id:'ha:light.sala',externalId:'light.sala',name:'Sala',category:'light',status:'online',capabilities:[]}]};const service=new IntegrationSyncService({devices});const first=await service.sync({homeId:'home',integrationId:'ha',provider});const second=await service.sync({homeId:'home',integrationId:'ha',provider});assert.deepEqual(first.created,1);assert.deepEqual(second.updated,1);assert.equal((await devices.listByHome('home')).length,1)});
 
 test('cofre residencial sincroniza sem duplicar e persiste eventos externos',async()=>{
   const identity=new MemoryIdentityStore();const repository=new MemoryHomeRepository();const vault=new CredentialVault(Buffer.alloc(32,4).toString('base64'));const events=new EventBus();
