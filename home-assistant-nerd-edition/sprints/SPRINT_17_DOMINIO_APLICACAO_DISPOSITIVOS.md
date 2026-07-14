@@ -24,4 +24,3 @@ Usar dispositivos como primeira fatia vertical da nova arquitetura em camadas.
 - [ ] Fluxos antigos delegam para a nova camada.
 - [ ] Testes unitários e integração com provider aprovados.
 - [ ] Gates DEV e QA aprovados.
-

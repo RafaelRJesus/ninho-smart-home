@@ -25,4 +25,3 @@ Transformar a API em uma fronteira fina, validada e sincronizada com consumidore
 - [ ] OpenAPI e tipos gerados sem divergência.
 - [ ] Testes de contrato positivos e negativos aprovados.
 - [ ] Gates DEV e QA aprovados.
-

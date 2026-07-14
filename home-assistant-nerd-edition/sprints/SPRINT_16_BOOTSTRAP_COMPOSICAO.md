@@ -24,4 +24,3 @@ Separar configuração, composição de dependências, aplicação HTTP, workers
 - [ ] Configuração validada antes da composição.
 - [ ] Shutdown gracioso testado.
 - [ ] Gates DEV e QA aprovados.
-

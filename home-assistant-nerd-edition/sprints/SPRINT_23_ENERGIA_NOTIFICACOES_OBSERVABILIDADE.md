@@ -25,4 +25,3 @@ Concluir a migração funcional e obter rastreabilidade ponta a ponta dos fluxos
 - [ ] Tracing e métricas implantados.
 - [ ] Testes de privacidade de logs e alarmes aprovados.
 - [ ] Gates DEV e QA aprovados.
-

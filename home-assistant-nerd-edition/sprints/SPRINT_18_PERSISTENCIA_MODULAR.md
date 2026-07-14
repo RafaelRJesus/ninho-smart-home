@@ -24,4 +24,3 @@ Substituir repositórios monolíticos por portas coesas e transações explícit
 - [ ] Testes contratuais executados para memória e PostgreSQL.
 - [ ] Rollback transacional validado.
 - [ ] Gates DEV e QA aprovados.
-

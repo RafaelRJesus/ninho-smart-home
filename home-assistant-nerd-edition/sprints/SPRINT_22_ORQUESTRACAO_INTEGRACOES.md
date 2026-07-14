@@ -24,4 +24,3 @@ Desacoplar cenas, automações e providers externos da camada HTTP e do processo
 - [ ] Outbox, retry e falhas parciais testados.
 - [ ] Testes com providers simulados aprovados.
 - [ ] Gates DEV e QA aprovados.
-
