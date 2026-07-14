@@ -1,4 +1,0 @@
-export class IntegrationSyncService {
-  constructor({devices,audit}){this.devices=devices;this.audit=audit;}
-  async sync({homeId,integrationId,provider,correlationId}){const external=await provider.listDevices();let created=0,updated=0;for(const item of external){const existing=await this.devices.findByExternalId(integrationId,item.externalId);const normalized={...existing,...item,id:existing?.id||item.id,homeId,integrationId,createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};await this.devices.upsert(normalized);existing?updated+=1:created+=1}await this.audit?.record({type:'INTEGRATION_SYNCED',homeId,targetId:integrationId,result:'succeeded',correlationId,metadata:{created,updated,total:external.length}});return {created,updated,total:external.length,syncedAt:new Date().toISOString()};}
-}
