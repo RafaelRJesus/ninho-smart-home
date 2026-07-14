@@ -12,8 +12,6 @@ services:
       PORT: 3001
     ports:
       - "${NINHO_PORT:-3001}:3001"
-    volumes:
-      - ninho-data:/app/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health/live"]
       interval: 30s
@@ -24,7 +22,3 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-
-volumes:
-  ninho-data:
-    name: ninho-data

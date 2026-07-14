@@ -31,14 +31,9 @@ coverage/
 *.swo
 *~
 
-# Diretórios temporários e dados gerados em execução
+# Diretórios temporários
 tmp/
 temp/
-data/state.json
-data/*.tmp
-data/test-state.json
-data/stress-state.json
-data/e2e-state.json
 playwright-report
 test-results
 home-assistant-nerd-edition-specs.zip

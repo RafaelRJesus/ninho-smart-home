@@ -2,7 +2,7 @@
 
 [![Continuous Integration](https://github.com/RafaelRJesus/ninho-smart-home/actions/workflows/ci.yml/badge.svg)](https://github.com/RafaelRJesus/ninho-smart-home/actions/workflows/ci.yml)
 
-Aplicação web operacional para controlar produtos Tuya/Ekaza por clique, texto e voz. Inclui dashboard React, planta interativa, backend Express, persistência local, interpretação de comandos e integração opcional com OpenAI.
+Aplicação web operacional para controlar produtos Tuya/Ekaza por clique, texto e voz. Inclui dashboard React, planta interativa, backend Express, persistência PostgreSQL, interpretação de comandos e integração opcional com OpenAI.
 
 ## Requisitos
 
@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Acesse `http://localhost:5173`. Sem credenciais, o sistema inicia em modo demonstração e salva mudanças em `data/state.json`.
+Acesse `http://localhost:5173`. Sem `DATABASE_URL`, o desenvolvimento usa repositórios em memória e os dados são reiniciados junto com o servidor.
 
 ## Produção
 
@@ -35,7 +35,7 @@ Com Docker:
 
 ```bash
 docker build -t ninho-tuya .
-docker run --env-file .env -p 3001:3001 -v ninho-data:/app/data ninho-tuya
+docker run --env-file .env -p 3001:3001 ninho-tuya
 ```
 
 Ou com Docker Compose:
@@ -46,7 +46,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-O volume `ninho-data` preserva dispositivos, planta, cenas e preferências após recriar o container. Para homologação completa antes de uma release, execute `npm run release:check`.
+Configure `DATABASE_URL` para preservar usuários, residências, dispositivos, planta, cenas e preferências após recriar o container. Para homologação completa antes de uma release, execute `npm run release:check`.
 
 ### Demo gratuita no Render
 

@@ -12,7 +12,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --chown=node:node --from=build /app/dist ./dist
 COPY --chown=node:node server ./server
-COPY --chown=node:node data/.gitkeep ./data/.gitkeep
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD wget -qO- http://127.0.0.1:3001/api/health/live || exit 1
