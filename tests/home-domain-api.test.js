@@ -47,6 +47,16 @@ test('domínio v1 persiste recursos sob a residência autorizada',async()=>{
   const audit=await agent.get(`/api/v1/homes/${home.id}/audit`);assert.ok(audit.body.some(item=>item.type==='FLOORPLAN_UPDATED'));
 });
 
+test('sprint 10 configura canais, agrega energia e gera alerta de consumo',async()=>{
+  const {agent,home}=await household('sprint10@ninho.local','Energia');const rooms=(await agent.get(`/api/v1/homes/${home.id}/rooms`)).body;
+  const preferences=await agent.patch(`/api/v1/homes/${home.id}/notification-preferences`).send({channels:{internal:true,push:true,email:true},quietHours:{enabled:true,start:'22:00',end:'07:00'}});assert.equal(preferences.status,200);assert.equal(preferences.body.channels.email,true);
+  assert.equal((await agent.patch(`/api/v1/homes/${home.id}/energy/settings`).send({tariff:0.8})).status,200);
+  const alert=await agent.post(`/api/v1/homes/${home.id}/energy/alerts`).send({period:'daily',thresholdKwh:2,severity:'warning',roomId:rooms[0].id});assert.equal(alert.status,201);
+  const reading=await agent.post(`/api/v1/homes/${home.id}/energy/readings`).send({kwh:2.5,roomId:rooms[0].id,recordedAt:'2026-07-15T12:00:00Z'});assert.equal(reading.status,201);
+  const energy=await agent.get(`/api/v1/homes/${home.id}/energy`);assert.equal(energy.body.totalKwh,2.5);assert.equal(energy.body.estimatedCost,2);assert.equal(energy.body.daily[0].kwh,2.5);assert.equal(energy.body.byRoom[0].roomId,rooms[0].id);
+  const notifications=await agent.get(`/api/v1/homes/${home.id}/notifications`);assert.ok(notifications.body.some(item=>item.title==='Alerta de consumo'&&item.severity==='warning'));
+});
+
 test('planta mantém histórico, restaura snapshot e rejeita concorrência',async()=>{
   const {agent,home}=await household('floorplan-version@ninho.local','Versões');const rooms=(await agent.get(`/api/v1/homes/${home.id}/rooms`)).body;const floor=(await agent.get(`/api/v1/homes/${home.id}/floors`)).body[0];
   const first=await agent.put(`/api/v1/homes/${home.id}/floorplan`).send({version:1,content:{floors:{[floor.id]:{background:null,rooms:{[rooms[0].id]:{x:0,y:0,width:50,height:50}}}}}});assert.equal(first.status,200);

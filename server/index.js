@@ -37,7 +37,8 @@ const databasePool=await connectPostgres();
 const identity=databasePool?new PostgresIdentityStore(databasePool):new MemoryIdentityStore();
 const homeRepository=databasePool?new PostgresHomeRepository(databasePool):new MemoryHomeRepository();
 const tokens=new TokenService(process.env.AUTH_SECRET||crypto.randomBytes(32).toString('hex'));
-const auth=new AuthService({identity,tokens,emailSender:new EmailSender()});
+const emailSender=new EmailSender();
+const auth=new AuthService({identity,tokens,emailSender});
 if(process.env.NODE_ENV==='production'&&!process.env.INTEGRATION_MASTER_KEY)throw new Error('INTEGRATION_MASTER_KEY é obrigatória em produção.');
 const vault=new CredentialVault(process.env.INTEGRATION_MASTER_KEY,process.env.INTEGRATION_KEY_VERSION||'v1');
 const turnstile=new TurnstileVerifier();
@@ -62,7 +63,7 @@ export function createApp(){
   app.use(metrics.middleware());
   app.use('/api',expressRateLimit({windowMs:60000,limit:Number(process.env.API_RATE_LIMIT_MAX||300),skip:req=>req.path.startsWith('/health')}));
   app.use('/api/v1/auth',expressRateLimit({windowMs:60000,limit:Number(process.env.AUTH_RATE_LIMIT_MAX||20)}));
-  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,orchestration,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
+  app.use('/api/v1',createV1Router({auth,identity,tokens,providers,vault,credentialStore:identity,turnstile,homeRepository,events,integrations,dashboard,orchestration,emailSender,controlExternal:(homeId,device,controls)=>device.integrationId?integrations.command(homeId,device,controls):undefined}));
   app.get('/api/version',(_req,res)=>res.json(buildInfo));
   app.get('/api/health',(_req,res)=>res.json({ok:true,uptime:Math.round(process.uptime()),timestamp:new Date().toISOString()}));
   app.get('/api/health/live',(_req,res)=>res.json({status:'alive'}));

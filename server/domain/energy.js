@@ -1,0 +1,11 @@
+const round=value=>Math.round((value+Number.EPSILON)*100000)/100000;
+export function aggregateEnergy(readings,tariff=null){
+  const group=keyFn=>Object.values(readings.reduce((all,item)=>{const key=keyFn(item);if(!key)return all;all[key]||={key,kwh:0,readings:0};all[key].kwh=round(all[key].kwh+Number(item.kwh));all[key].readings++;return all;},{})).map(item=>({...item,estimatedCost:tariff===null?null:round(item.kwh*tariff)}));
+  const daily=group(item=>String(item.recordedAt).slice(0,10)).map(({key,...rest})=>({date:key,...rest})).sort((a,b)=>a.date.localeCompare(b.date));
+  const monthly=group(item=>String(item.recordedAt).slice(0,7)).map(({key,...rest})=>({month:key,...rest})).sort((a,b)=>a.month.localeCompare(b.month));
+  const byRoom=group(item=>item.roomId).map(({key,...rest})=>({roomId:key,...rest}));const byDevice=group(item=>item.deviceId).map(({key,...rest})=>({deviceId:key,...rest}));
+  const totalKwh=readings.length?round(readings.reduce((sum,item)=>sum+Number(item.kwh),0)):null;
+  return {totalKwh,estimatedCost:totalKwh===null||tariff===null?null:round(totalKwh*tariff),daily,monthly,byRoom,byDevice};
+}
+export function validateNotificationPreferences(input){const channels={internal:input?.channels?.internal!==false,push:Boolean(input?.channels?.push),email:Boolean(input?.channels?.email)};if(!Object.values(channels).some(Boolean))throw new Error('Selecione ao menos um canal.');const start=String(input?.quietHours?.start||'22:00'),end=String(input?.quietHours?.end||'07:00');if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end))throw new Error('Horário silencioso inválido.');return {channels,quietHours:{enabled:Boolean(input?.quietHours?.enabled),start,end}};}
+export function validateEnergyAlert(input){const period=['daily','monthly'].includes(input?.period)?input.period:null,thresholdKwh=Number(input?.thresholdKwh),severity=['info','warning','error'].includes(input?.severity)?input.severity:'warning';if(!period||!Number.isFinite(thresholdKwh)||thresholdKwh<=0)throw new Error('Período e limite de consumo positivo são obrigatórios.');return {period,thresholdKwh,severity,enabled:input?.enabled!==false,roomId:input?.roomId||null,deviceId:input?.deviceId||null};}

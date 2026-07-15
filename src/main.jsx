@@ -45,6 +45,7 @@ function App({user,home,onLogout}) {
   function navigate(next){if(view==='plant'&&floorplanDirty&&!window.confirm('Você possui alterações não salvas na planta. Deseja sair e descartá-las?'))return;setFloorplanDirty(false);setView(next);}
 
   const receiveEvent = useCallback(event => {
+    if(event.type==='notification.push'){notify(event.payload.message,event.payload.severity);if('Notification'in window&&Notification.permission==='granted')new Notification(event.payload.title,{body:event.payload.message});return;}
     if (!event.type?.startsWith('device.')) return;
     const label = event.type === 'device.created' ? `${event.payload.name} foi adicionado` : `${event.payload.name} foi atualizado`;
     setActivity(items => [{ id: event.id, text: label, time: new Date(event.occurredAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }, ...items].slice(0, 10));

@@ -23,7 +23,7 @@ Este arquivo é a fonte de verdade do progresso do roadmap. Atualize o checklist
 | 07 | Controles avançados | **Concluído** | 2026-07-13 |
 | 08 | Edição e camadas | **Concluído** | 2026-07-13 |
 | 09 | Cenas e automações | **Concluído** | 2026-07-13 |
-| 10 | Notificações e energia | Parcial | 2026-07-10 |
+| 10 | Notificações e energia | Parcial avançado | 2026-07-15 |
 | 11 | Segurança e LGPD | Parcial avançado | 2026-07-10 |
 | 12 | Resiliência e observabilidade | Parcial | 2026-07-10 |
 | 13 | Performance e acessibilidade | Parcial | 2026-07-10 |
@@ -163,9 +163,14 @@ Evidências: `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.env
 
 - [x] Central interna de notificações, severidade e leitura.
 - [x] Leituras de energia, ausência diferente de zero e tarifa configurável.
-- [ ] Preferências de canal, push/e-mail e horário silencioso.
-- [ ] Agregações diária, mensal, por cômodo e dispositivo.
-- [ ] Alertas configuráveis de consumo.
+- [x] Preferências de canal interno, push no navegador e e-mail SMTP, com horário silencioso aplicado aos canais externos.
+- [x] Agregações diária, mensal, por cômodo e dispositivo, preservando ausência como valor desconhecido.
+- [x] Alertas configuráveis de consumo por período, cômodo ou dispositivo, com severidade e geração de notificação.
+- [x] Persistência equivalente em memória e PostgreSQL pela migração `0007_notifications_energy.sql`.
+- [x] Testes unitários e de API, lint, typecheck e build aprovados localmente em 2026-07-15.
+- [ ] Gate QA, deploy e aprovação formal registrados.
+
+Evidências: `server/domain/energy.js`, `server/routes/home-domain.js`, `database/migrations/0007_notifications_energy.sql`, `src/components/AutomationCenter.jsx`, `tests/energy.test.js`, `tests/home-domain-api.test.js`.
 
 ## Sprint 11 — Segurança e LGPD
 

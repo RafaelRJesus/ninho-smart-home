@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 const clone=value=>structuredClone(value);
-const initial=()=>({devices:[],floorplan:{content:{floors:{}},version:1,updatedAt:new Date().toISOString()},floorplanVersions:[],scenes:[],automations:[],orchestrationExecutions:[],notifications:[],energyReadings:[],energySettings:{tariff:null,currency:'BRL'}});
+const initial=()=>({devices:[],floorplan:{content:{floors:{}},version:1,updatedAt:new Date().toISOString()},floorplanVersions:[],scenes:[],automations:[],orchestrationExecutions:[],notifications:[],notificationPreferences:{channels:{internal:true,push:false,email:false},quietHours:{enabled:false,start:'22:00',end:'07:00'}},energyReadings:[],energySettings:{tariff:null,currency:'BRL'},energyAlerts:[]});
 
 export class MemoryHomeRepository {
   constructor(){this.homes=new Map();}
@@ -29,7 +29,12 @@ export class MemoryHomeRepository {
   async listNotifications(homeId){return clone(this.state(homeId).notifications);}
   async addNotification(homeId,input){const value={id:input.id||crypto.randomUUID(),homeId,readAt:null,createdAt:new Date().toISOString(),...input};this.state(homeId).notifications.unshift(value);return clone(value);}
   async readNotification(homeId,id){const value=this.state(homeId).notifications.find(item=>item.id===id);if(!value)return null;value.readAt=new Date().toISOString();return clone(value);}
+  async getNotificationPreferences(homeId){return clone(this.state(homeId).notificationPreferences);}
+  async updateNotificationPreferences(homeId,input){this.state(homeId).notificationPreferences=clone(input);return clone(input);}
   async getEnergy(homeId){const state=this.state(homeId);return {readings:clone(state.energyReadings),settings:clone(state.energySettings)};}
   async addEnergyReading(homeId,input){const value={id:crypto.randomUUID(),homeId,recordedAt:new Date().toISOString(),...input};this.state(homeId).energyReadings.push(value);return clone(value);}
   async updateEnergySettings(homeId,input){Object.assign(this.state(homeId).energySettings,input);return clone(this.state(homeId).energySettings);}
+  async listEnergyAlerts(homeId){return clone(this.state(homeId).energyAlerts);}
+  async addEnergyAlert(homeId,input){const value={id:crypto.randomUUID(),...input,createdAt:new Date().toISOString()};this.state(homeId).energyAlerts.push(value);return clone(value);}
+  async deleteEnergyAlert(homeId,id){const values=this.state(homeId).energyAlerts,index=values.findIndex(item=>item.id===id);if(index<0)return false;values.splice(index,1);return true;}
 }
