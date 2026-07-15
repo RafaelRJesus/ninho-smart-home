@@ -10,7 +10,7 @@
     "build": "vite build",
     "start": "NODE_ENV=production node server/index.js",
     "test": "NODE_ENV=test node --test tests/*.test.js",
-    "test:unit": "NODE_ENV=test node --test tests/assistant.test.js tests/auth.test.js tests/credential-vault.test.js tests/dashboard.test.js tests/domain.test.js tests/events.test.js tests/floorplan.test.js tests/orchestration.test.js tests/postgres-store.test.js tests/turnstile.test.js tests/tuya.test.js",
+    "test:unit": "NODE_ENV=test node --test tests/assistant.test.js tests/auth.test.js tests/credential-vault.test.js tests/dashboard.test.js tests/domain.test.js tests/energy.test.js tests/events.test.js tests/floorplan.test.js tests/orchestration.test.js tests/postgres-store.test.js tests/turnstile.test.js tests/tuya.test.js",
     "test:integration": "NODE_ENV=test node --test tests/api.test.js tests/auth.test.js tests/home-domain-api.test.js tests/integrations.test.js tests/security-observability.test.js",
     "test:postgres": "NODE_ENV=test node --test tests/postgres-home-domain.test.js",
     "test:e2e": "playwright test",
