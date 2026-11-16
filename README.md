@@ -48,6 +48,10 @@ docker compose ps
 
 Configure `DATABASE_URL` para preservar usuários, residências, dispositivos, planta, cenas e preferências após recriar o container. Para homologação completa antes de uma release, execute `npm run release:check`.
 
+### Produção no Oracle Cloud (Always Free)
+
+VM ARM gratuita com PostgreSQL próprio, HTTPS pelo Caddy e deploy automático após o CI. Passo a passo em [deploy/oracle/README.md](deploy/oracle/README.md).
+
 ### Demo gratuita no Render
 
 O arquivo `render.yaml` publica uma demonstração segura sem credenciais Tuya, Home Assistant ou OpenAI. No Render, escolha **New > Blueprint**, conecte este repositório e confirme o plano Free. O `AUTH_SECRET` e o token de métricas são gerados automaticamente.
