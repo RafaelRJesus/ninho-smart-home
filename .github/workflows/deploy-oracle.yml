@@ -1,0 +1,70 @@
+name: Deploy Oracle Cloud
+
+# Roda depois que o CI passa na main, ou manualmente.
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-oracle
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Atualizar VM
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+      ORACLE_USER: ${{ secrets.ORACLE_USER }}
+    steps:
+      - name: Verificar secrets
+        id: check
+        run: |
+          if [ -z "$ORACLE_HOST" ]; then
+            echo "Secrets da Oracle ainda não cadastrados; pulando deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configurar SSH
+        if: steps.check.outputs.skip != 'true'
+        env:
+          SSH_KEY: ${{ secrets.ORACLE_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ORACLE_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/oracle
+          chmod 600 ~/.ssh/oracle
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Atualizar e subir containers
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          ssh -i ~/.ssh/oracle "${ORACLE_USER:-ubuntu}@$ORACLE_HOST" \
+            'set -e
+             cd /opt/ninho
+             git fetch --depth 1 origin main
+             git reset --hard origin/main
+             cd deploy/oracle
+             docker compose up -d --build --remove-orphans
+             docker image prune -f'
+
+      - name: Smoke test
+        if: steps.check.outputs.skip != 'true'
+        env:
+          APP_URL: ${{ vars.ORACLE_APP_URL }}
+        run: |
+          [ -n "$APP_URL" ] || { echo "vars.ORACLE_APP_URL vazio; pulando."; exit 0; }
+          for i in $(seq 1 20); do
+            curl -fsS "$APP_URL/api/health/live" && exit 0
+            sleep 6
+          done
+          echo "Ninho não respondeu em $APP_URL" >&2; exit 1

@@ -1,0 +1,73 @@
+# Ninho na VM Always Free do Oracle Cloud (Ubuntu ARM64).
+# Uso, a partir desta pasta:  docker compose up -d --build
+# As variáveis vêm de deploy/oracle/.env (copiar de .env.oracle.example).
+
+name: ninho
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ninho}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ninho}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Sem "ports": o banco só é acessível pela rede interna do Compose.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ninho:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: ninho-tuya:${NINHO_VERSION:-oracle}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      TRUST_PROXY: "true"
+      REQUIRE_HTTPS: "true"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ninho}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ninho}
+      # Postgres local na rede interna, sem TLS.
+      DATABASE_SSL: "false"
+    # Sem "ports": o acesso externo passa pelo Caddy.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - ninho
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

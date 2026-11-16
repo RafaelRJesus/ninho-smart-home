@@ -1,0 +1,6 @@
+# Proxy reverso com HTTPS automático (Let's Encrypt).
+# DOMAIN pode ser um domínio próprio ou IP.sslip.io (ex.: 150-1-2-3.sslip.io).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy ninho:3001
+}
